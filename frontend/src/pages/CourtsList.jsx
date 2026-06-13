@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getCourts, deleteCourt } from '../services/api';
+import Modal from '../components/Modal';
 
 function CourtsList() {
   const [courts, setCourts] = useState([]);
   const [name, setName] = useState('');
   const [isIndoor, setIsIndoor] = useState('');
   const [error, setError] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
   useEffect(() => { fetchCourts(); }, []);
 
@@ -38,12 +41,18 @@ function CourtsList() {
       await deleteCourt(id);
       fetchCourts();
     } catch (err) {
-      alert(err.response?.data || 'Cannot delete court.');
+      setModalMessage(err.response?.data || 'Cannot delete court.');
     }
+  };
+
+  const toggleDescription = (id) => {
+    setExpandedDescriptions(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
     <div className="page">
+      <Modal message={modalMessage} onClose={() => setModalMessage('')} />
+
       <div className="page-header">
         <div>
           <div className="page-title">Courts</div>
@@ -97,26 +106,58 @@ function CourtsList() {
         </thead>
         <tbody>
           {courts.map(court => (
-            <tr key={court.courtId}>
-              <td className="td-name">{court.name}</td>
-              <td>{court.sportName}</td>
-              <td>{court.location}</td>
-              <td>{court.pricePerHour} RSD</td>
-              <td>
-                <span className={`badge ${court.isIndoor ? 'badge-indoor' : 'badge-outdoor'}`}>
-                  {court.isIndoor ? 'Indoor' : 'Outdoor'}
-                </span>
-              </td>
-              <td className="actions">
-                <Link to={`/courts/${court.courtId}`}>
-                  <button className="btn-ghost">Edit</button>
-                </Link>
-                <span className="divider">|</span>
-                <button className="btn-danger" onClick={() => handleDelete(court.courtId)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
+            <>
+              <tr key={court.courtId}>
+                <td className="td-name">{court.name}</td>
+                <td>{court.sportName}</td>
+                <td>{court.location}</td>
+                <td>{court.pricePerHour} RSD</td>
+                <td>
+                  <span className={`badge ${court.isIndoor ? 'badge-indoor' : 'badge-outdoor'}`}>
+                    {court.isIndoor ? 'Indoor' : 'Outdoor'}
+                  </span>
+                </td>
+                <td className="actions">
+                  {court.description && (
+                    <>
+                      <button
+                        style={{
+                          background: 'none', border: 'none',
+                          color: 'var(--sage)', fontSize: '11px',
+                          letterSpacing: '0.1em', textTransform: 'uppercase',
+                          cursor: 'pointer', padding: '8px 0'
+                        }}
+                        onClick={() => toggleDescription(court.courtId)}
+                      >
+                        {expandedDescriptions[court.courtId] ? '▲ less' : '▼ more'}
+                      </button>
+                      <span className="divider">|</span>
+                    </>
+                  )}
+                  <Link to={`/courts/${court.courtId}`}>
+                    <button className="btn-ghost">Edit</button>
+                  </Link>
+                  <span className="divider">|</span>
+                  <button className="btn-danger" onClick={() => handleDelete(court.courtId)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+              {expandedDescriptions[court.courtId] && court.description && (
+                <tr key={`desc-${court.courtId}`}>
+                  <td colSpan="6" style={{
+                    padding: '0 0 16px 0',
+                    fontSize: '13px',
+                    color: 'var(--bronze)',
+                    fontWeight: 300,
+                    fontStyle: 'italic',
+                    letterSpacing: '0.02em'
+                  }}>
+                    {court.description}
+                  </td>
+                </tr>
+              )}
+            </>
           ))}
         </tbody>
       </table>

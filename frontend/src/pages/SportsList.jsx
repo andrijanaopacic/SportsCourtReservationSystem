@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getSports, deleteSport } from '../services/api';
+import { getSports, getSportById, deleteSport } from '../services/api';
 import Modal from '../components/Modal';
 
 function SportsList() {
@@ -8,6 +8,7 @@ function SportsList() {
   const [searchName, setSearchName] = useState('');
   const [error, setError] = useState('');
   const [modalMessage, setModalMessage] = useState('');
+  const [detailsSport, setDetailsSport] = useState(null);
 
   useEffect(() => { fetchSports(); }, []);
 
@@ -39,6 +40,15 @@ function SportsList() {
     }
   };
 
+  const handleDetails = async (id) => {
+    try {
+      const res = await getSportById(id);
+      setDetailsSport(res.data);
+    } catch {
+      setModalMessage('Failed to load sport details.');
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await deleteSport(id);
@@ -51,6 +61,73 @@ function SportsList() {
   return (
     <div className="page">
       <Modal message={modalMessage} onClose={() => setModalMessage('')} />
+
+      {/* Details Modal */}
+      {detailsSport && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(78, 34, 15, 0.4)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'var(--cream)', padding: '48px',
+            maxWidth: '520px', width: '90%',
+            borderTop: '2px solid var(--bronze)'
+          }}>
+            <div style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '32px', fontWeight: 300, fontStyle: 'italic',
+              color: 'var(--mahogany)', marginBottom: '8px'
+            }}>
+              {detailsSport.name}
+            </div>
+            <div style={{
+              fontSize: '11px', letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: 'var(--bronze)',
+              marginBottom: '32px'
+            }}>
+              Max {detailsSport.maxPlayers} players
+            </div>
+
+            <div style={{
+              fontSize: '10px', letterSpacing: '0.15em',
+              textTransform: 'uppercase', color: 'var(--bronze)',
+              marginBottom: '12px'
+            }}>
+              Courts
+            </div>
+
+            {detailsSport.courts && detailsSport.courts.length > 0 ? (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--mahogany)' }}>
+                    <th style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--bronze)', padding: '0 0 8px', textAlign: 'left' }}>Name</th>
+                    <th style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--bronze)', padding: '0 0 8px', textAlign: 'left' }}>Location</th>
+                    <th style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--bronze)', padding: '0 0 8px', textAlign: 'left' }}>Price / hr</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailsSport.courts.map(court => (
+                    <tr key={court.courtId} style={{ borderBottom: '1px solid var(--cream-dark)' }}>
+                      <td style={{ padding: '12px 0', fontFamily: 'Cormorant Garamond, serif', fontSize: '16px' }}>{court.name}</td>
+                      <td style={{ padding: '12px 0', fontSize: '13px', fontWeight: 300 }}>{court.location}</td>
+                      <td style={{ padding: '12px 0', fontSize: '13px', fontWeight: 300 }}>{court.pricePerHour} RSD</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{ fontSize: '13px', color: 'var(--sage)', fontWeight: 300 }}>
+                No courts assigned to this sport yet.
+              </p>
+            )}
+
+            <div style={{ marginTop: '32px' }}>
+              <button className="btn-primary" onClick={() => setDetailsSport(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="page-header">
         <div>
@@ -93,6 +170,10 @@ function SportsList() {
               <td className="td-name">{sport.name}</td>
               <td>{sport.maxPlayers}</td>
               <td className="actions">
+                <button className="btn-ghost" onClick={() => handleDetails(sport.sportId)}>
+                  Details
+                </button>
+                <span className="divider">|</span>
                 <Link to={`/sports/${sport.sportId}`}>
                   <button className="btn-ghost">Edit</button>
                 </Link>
