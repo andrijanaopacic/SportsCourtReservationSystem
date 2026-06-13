@@ -1,89 +1,131 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { createCourt, getCourtById, updateCourt, getSports } from '../services/api';
+import { Link } from 'react-router-dom';
+import { getCourts, deleteCourt } from '../services/api';
+import Modal from '../components/Modal';
 
-function CourtForm() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const isEdit = id && id !== 'new';
-  const [form, setForm] = useState({ name: '', location: '', description: '', pricePerHour: '', isIndoor: false, sportId: '' });
-  const [sports, setSports] = useState([]);
+function CourtsList() {
+  const [courts, setCourts] = useState([]);
+  const [name, setName] = useState('');
+  const [isIndoor, setIsIndoor] = useState('');
   const [error, setError] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
 
-  useEffect(() => {
-    getSports().then(res => setSports(res.data));
-    if (isEdit) {
-      getCourtById(id).then(res => {
-        const c = res.data;
-        setForm({ name: c.name, location: c.location, description: c.description, pricePerHour: c.pricePerHour, isIndoor: c.isIndoor, sportId: c.sportId || '' });
-      });
-    }
-  }, [id]);
+  useEffect(() => { fetchCourts(); }, []);
 
-  const handleSubmit = async () => {
+  const fetchCourts = async () => {
     try {
-      const data = { ...form, pricePerHour: parseFloat(form.pricePerHour), sportId: parseInt(form.sportId) };
-      if (isEdit) { await updateCourt(id, data); } else { await createCourt(data); }
-      navigate('/courts');
+      const params = {};
+      if (name) params.name = name;
+      if (isIndoor !== '') params.isIndoor = isIndoor;
+      const res = await getCourts(params);
+      setCourts(res.data);
+    } catch {
+      setError('Failed to load courts.');
+    }
+  };
+
+  const handleShowAll = async () => {
+    setName('');
+    setIsIndoor('');
+    try {
+      const res = await getCourts({});
+      setCourts(res.data);
+    } catch {
+      setError('Failed to load courts.');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteCourt(id);
+      fetchCourts();
     } catch (err) {
-      setError(err.response?.data || 'Something went wrong.');
+      setModalMessage(err.response?.data || 'Cannot delete court.');
     }
   };
 
   return (
     <div className="page">
+      <Modal message={modalMessage} onClose={() => setModalMessage('')} />
+
       <div className="page-header">
         <div>
-          <div className="page-title">{isEdit ? 'Edit Court' : 'New Court'}</div>
-          <div className="page-subtitle">{isEdit ? 'Update court details' : 'Add a court'}</div>
+          <div className="page-title">Courts</div>
+          <div className="page-subtitle">Browse & reserve</div>
         </div>
-        <button className="btn-ghost" onClick={() => navigate('/courts')}>← Back</button>
+        <Link to="/courts/new">
+          <button className="btn-primary">+ Add Court</button>
+        </Link>
       </div>
-      <div style={{ maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+      <div className="filter-bar">
         <div className="form-group">
-          <label className="form-label">Court Name</label>
-          <input className="form-input" placeholder="e.g. Court No. 1"
-            value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Location</label>
-          <input className="form-input" placeholder="e.g. Belgrade, Dedinje"
-            value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <input className="form-input" placeholder="Short description"
-            value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Price per Hour (RSD)</label>
-          <input className="form-input" type="number" placeholder="e.g. 2400"
-            value={form.pricePerHour} onChange={e => setForm({ ...form, pricePerHour: e.target.value })} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Sport</label>
-          <select className="form-select" value={form.sportId}
-            onChange={e => setForm({ ...form, sportId: e.target.value })}>
-            <option value="">Select sport...</option>
-            {sports.map(s => <option key={s.sportId} value={s.sportId}>{s.name}</option>)}
-          </select>
+          <label className="form-label">Search</label>
+          <input
+            className="form-input"
+            placeholder="Court name..."
+            value={name}
+            onChange={e => setName(e.target.value)}
+            style={{ width: '220px' }}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">Type</label>
-          <select className="form-select" value={form.isIndoor}
-            onChange={e => setForm({ ...form, isIndoor: e.target.value === 'true' })}>
-            <option value="false">Outdoor</option>
+          <select
+            className="form-select"
+            value={isIndoor}
+            onChange={e => setIsIndoor(e.target.value)}
+            style={{ width: '160px' }}
+          >
+            <option value="">All types</option>
             <option value="true">Indoor</option>
+            <option value="false">Outdoor</option>
           </select>
         </div>
-        {error && <div className="error-msg">{error}</div>}
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <button className="btn-primary" onClick={handleSubmit}>{isEdit ? 'Save Changes' : 'Save Court'}</button>
-          <button className="btn-ghost" onClick={() => navigate('/courts')}>Cancel</button>
-        </div>
+        <button className="btn-ghost" onClick={fetchCourts}>Search</button>
+        <button className="btn-ghost" onClick={handleShowAll}>Show All</button>
       </div>
+
+      {error && <div className="error-msg">{error}</div>}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Court</th>
+            <th>Sport</th>
+            <th>Location</th>
+            <th>Price / hr</th>
+            <th>Type</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {courts.map(court => (
+            <tr key={court.courtId}>
+              <td className="td-name">{court.name}</td>
+              <td>{court.sportName}</td>
+              <td>{court.location}</td>
+              <td>{court.pricePerHour} RSD</td>
+              <td>
+                <span className={`badge ${court.isIndoor ? 'badge-indoor' : 'badge-outdoor'}`}>
+                  {court.isIndoor ? 'Indoor' : 'Outdoor'}
+                </span>
+              </td>
+              <td className="actions">
+                <Link to={`/courts/${court.courtId}`}>
+                  <button className="btn-ghost">Edit</button>
+                </Link>
+                <span className="divider">|</span>
+                <button className="btn-danger" onClick={() => handleDelete(court.courtId)}>
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-export default CourtForm;
+export default CourtsList;

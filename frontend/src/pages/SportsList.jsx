@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSports, deleteSport } from '../services/api';
+import Modal from '../components/Modal';
 
 function SportsList() {
   const [sports, setSports] = useState([]);
   const [searchName, setSearchName] = useState('');
   const [error, setError] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => { fetchSports(); }, []);
 
@@ -42,12 +44,14 @@ function SportsList() {
       await deleteSport(id);
       fetchSports();
     } catch (err) {
-      alert(err.response?.data || 'Cannot delete sport.');
+      setModalMessage(err.response?.data || 'Cannot delete sport.');
     }
   };
 
   return (
     <div className="page">
+      <Modal message={modalMessage} onClose={() => setModalMessage('')} />
+
       <div className="page-header">
         <div>
           <div className="page-title">Sports</div>
