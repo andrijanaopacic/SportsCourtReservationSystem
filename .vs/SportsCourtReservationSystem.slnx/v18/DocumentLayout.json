@@ -1,7 +1,24 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{EF13A627-1E9B-422B-A518-A5B74327712D}|Reservation.API\\Reservation.API.csproj|c:\\users\\andrijana\\source\\repos\\sportscourtreservationsystem\\reservation.api\\controllers\\sportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EF13A627-1E9B-422B-A518-A5B74327712D}|Reservation.API\\Reservation.API.csproj|solutionrelative:reservation.api\\controllers\\sportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3175C82A-CEA3-47B4-8C8C-8DEC6D5AF1EC}|Infrastructure\\Reservation.Infrastructure.csproj|c:\\users\\andrijana\\source\\repos\\sportscourtreservationsystem\\infrastructure\\repositories\\sportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3175C82A-CEA3-47B4-8C8C-8DEC6D5AF1EC}|Infrastructure\\Reservation.Infrastructure.csproj|solutionrelative:infrastructure\\repositories\\sportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3994CEC9-DF67-433E-8812-EFEB04696FE7}|Domain\\Reservation.Domain.csproj|c:\\users\\andrijana\\source\\repos\\sportscourtreservationsystem\\domain\\repositories\\isportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3994CEC9-DF67-433E-8812-EFEB04696FE7}|Domain\\Reservation.Domain.csproj|solutionrelative:domain\\repositories\\isportrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EF13A627-1E9B-422B-A518-A5B74327712D}|Reservation.API\\Reservation.API.csproj|c:\\users\\andrijana\\source\\repos\\sportscourtreservationsystem\\reservation.api\\controllers\\courtscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EF13A627-1E9B-422B-A518-A5B74327712D}|Reservation.API\\Reservation.API.csproj|solutionrelative:reservation.api\\controllers\\courtscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 12,
           "Children": [
             {
               "$type": "Bookmark",
@@ -50,6 +67,58 @@
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SportRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Infrastructure\\Repositories\\SportRepository.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Repositories\\SportRepository.cs",
+              "ToolTip": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Infrastructure\\Repositories\\SportRepository.cs",
+              "RelativeToolTip": "Infrastructure\\Repositories\\SportRepository.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-13T09:45:55.841Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ISportRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Domain\\Repositories\\ISportRepository.cs",
+              "RelativeDocumentMoniker": "Domain\\Repositories\\ISportRepository.cs",
+              "ToolTip": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Domain\\Repositories\\ISportRepository.cs",
+              "RelativeToolTip": "Domain\\Repositories\\ISportRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-13T09:45:34.071Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SportsController.cs",
+              "DocumentMoniker": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Reservation.API\\Controllers\\SportsController.cs",
+              "RelativeDocumentMoniker": "Reservation.API\\Controllers\\SportsController.cs",
+              "ToolTip": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Reservation.API\\Controllers\\SportsController.cs",
+              "RelativeToolTip": "Reservation.API\\Controllers\\SportsController.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABgAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-13T09:44:59.462Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CourtsController.cs",
+              "DocumentMoniker": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Reservation.API\\Controllers\\CourtsController.cs",
+              "RelativeDocumentMoniker": "Reservation.API\\Controllers\\CourtsController.cs",
+              "ToolTip": "C:\\Users\\Andrijana\\source\\repos\\SportsCourtReservationSystem\\Reservation.API\\Controllers\\CourtsController.cs",
+              "RelativeToolTip": "Reservation.API\\Controllers\\CourtsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-13T09:34:40.772Z",
+              "EditorCaption": ""
             }
           ]
         }

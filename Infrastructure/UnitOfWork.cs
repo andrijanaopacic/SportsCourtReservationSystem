@@ -1,10 +1,29 @@
-﻿using System;
+﻿using Reservation.Domain.Repositories;
+using Reservation.Infrastructure.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Infrastructure
 {
-    internal class UnitOfWork
+    public class UnitOfWork : IUnitOfWork
     {
+        private readonly ReservationContext _context;
+
+        private ISportRepository? _sports;
+        private ICourtRepository? _courts;
+
+        public UnitOfWork(ReservationContext context)
+        {
+            _context = context;
+        }
+        public ISportRepository Sports => _sports ??= new SportRepository(_context);
+
+        public ICourtRepository Courts => _courts ??= new CourtRepository(_context);
+
+        public void Dispose() =>  _context.Dispose();
+
+        public int SaveChanges() => _context.SaveChanges();
+        
     }
 }
