@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --cream: #F7F1DE;
+  --cream-dark: #EDE6CC;
+  --sage: #B0BA99;
+  --bronze: #9D6638;
+  --mahogany: #4E220F;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--cream);
+  font-family: 'Inter', sans-serif;
+  color: var(--mahogany);
+  min-height: 100vh;
+}
+
+.page {
+  padding: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--sage);
+}
+
+.page-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--mahogany);
+  letter-spacing: 0.02em;
+}
+
+.page-subtitle {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bronze);
+  margin-top: 4px;
+}
+
+/* BUTTONS */
+.btn-primary {
+  background: var(--mahogany);
+  color: var(--cream);
+  border: none;
+  padding: 12px 28px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--bronze); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--bronze);
+  border: 1px solid var(--bronze);
+  padding: 8px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { background: var(--bronze); color: var(--cream); }
+
+.btn-danger {
+  background: transparent;
+  color: #8B2020;
+  border: none;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 8px 0;
+}
+.btn-danger:hover { color: #5a0f0f; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+
+thead tr { border-bottom: 1px solid var(--mahogany); }
+
+thead th {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bronze);
+  padding: 0 0 12px 0;
+  text-align: left;
+  font-weight: 500;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--cream-dark);
+  transition: background 0.15s;
+}
+tbody tr:hover { background: var(--cream-dark); }
+
+tbody td {
+  padding: 18px 0;
+  font-size: 14px;
+  color: var(--mahogany);
+  font-weight: 300;
+}
+
+.td-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider {
+  color: var(--sage);
+  font-size: 11px;
+}
+
+/* BADGE */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.badge-indoor { border: 1px solid var(--bronze); color: var(--bronze); }
+.badge-outdoor { border: 1px solid var(--sage); color: var(--sage); }
+
+/* FORM */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+
+.form-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--sage);
+  padding: 10px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--mahogany);
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.form-input::placeholder { color: var(--sage); }
+.form-input:focus { border-bottom-color: var(--bronze); }
+
+.form-select {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--sage);
+  padding: 10px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--mahogany);
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+  align-items: flex-end;
+}
+
+/* ERROR */
+.error-msg {
+  color: #8B2020;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 12px 0;
+}
