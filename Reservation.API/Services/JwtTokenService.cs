@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace Reservation.API.Service
+namespace Reservation.API.Services
 {
     public class JwtTokenService
     {

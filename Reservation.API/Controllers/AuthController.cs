@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.API.DTOs.Auth;
-using Reservation.API.Service;
+using Reservation.API.Services;
 using Reservation.Infrastructure.Identity;
 using System.Security.Claims;
 
