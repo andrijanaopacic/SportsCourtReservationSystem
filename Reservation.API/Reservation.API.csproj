@@ -19,10 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Service\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Domain\Reservation.Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\Reservation.Infrastructure.csproj" />
   </ItemGroup>

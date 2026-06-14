@@ -1,18 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Reservation.Domain.Models;
+using Reservation.Infrastructure.Identity;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Infrastructure
 {
-    public class ReservationContext : DbContext
+    public class ReservationContext : IdentityDbContext<ApplicationUser>
     {
         public ReservationContext() { }
         public ReservationContext(DbContextOptions<ReservationContext> options) : base(options) { }
 
         public DbSet<Sport> Sports { get; set; }
         public DbSet<Court> Courts { get; set; }
+        public DbSet<TimeSlot> TimeSlots { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -43,6 +46,18 @@ namespace Infrastructure
                       .WithMany(s => s.Courts)
                       .HasForeignKey(c => c.SportId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<TimeSlot>(entity =>
+            {
+                entity.HasKey(t => t.TimeSlotId);
+                entity.Property(t => t.StartTime).IsRequired();
+                entity.Property(t => t.EndTime).IsRequired();
+
+                entity.HasOne(t => t.Court)
+                      .WithMany()
+                      .HasForeignKey(t => t.CourtId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

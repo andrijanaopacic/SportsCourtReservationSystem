@@ -4,6 +4,7 @@ using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Reservation.Infrastructure.Migrations
 {
     [DbContext(typeof(ReservationContext))]
-    partial class ReservationContextModelSnapshot : ModelSnapshot
+    [Migration("20260614041854_AddIdentity")]
+    partial class AddIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -216,30 +219,6 @@ namespace Reservation.Infrastructure.Migrations
                     b.ToTable("Sports");
                 });
 
-            modelBuilder.Entity("Reservation.Domain.Models.TimeSlot", b =>
-                {
-                    b.Property<int>("TimeSlotId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TimeSlotId"));
-
-                    b.Property<int>("CourtId")
-                        .HasColumnType("int");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time");
-
-                    b.HasKey("TimeSlotId");
-
-                    b.HasIndex("CourtId");
-
-                    b.ToTable("TimeSlots");
-                });
-
             modelBuilder.Entity("Reservation.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -373,17 +352,6 @@ namespace Reservation.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Sport");
-                });
-
-            modelBuilder.Entity("Reservation.Domain.Models.TimeSlot", b =>
-                {
-                    b.HasOne("Reservation.Domain.Models.Court", "Court")
-                        .WithMany()
-                        .HasForeignKey("CourtId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Court");
                 });
 
             modelBuilder.Entity("Reservation.Domain.Models.Sport", b =>

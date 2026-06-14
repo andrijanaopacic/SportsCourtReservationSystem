@@ -12,14 +12,15 @@ namespace Infrastructure
 
         private ISportRepository? _sports;
         private ICourtRepository? _courts;
+        private ITimeSlotRepository? _timeSlots;
 
         public UnitOfWork(ReservationContext context)
         {
             _context = context;
         }
         public ISportRepository Sports => _sports ??= new SportRepository(_context);
-
         public ICourtRepository Courts => _courts ??= new CourtRepository(_context);
+        public ITimeSlotRepository TimeSlots => _timeSlots ??= new TimeSlotRepository(_context);
 
         public void Dispose() =>  _context.Dispose();
 

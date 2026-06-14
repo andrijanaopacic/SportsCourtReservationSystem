@@ -8,6 +8,7 @@ namespace Reservation.Domain.Repositories
     {
         ISportRepository Sports { get; }
         ICourtRepository Courts { get; }
+        ITimeSlotRepository TimeSlots { get; }
 
         int SaveChanges();
     }

@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Reservation.Domain.Models
+﻿namespace Reservation.API.DTOs.TimeSlot
 {
-    public class TimeSlot
+    public class TimeSlotDto
     {
         public int TimeSlotId { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
         public int CourtId { get; set; }
-        public Court Court { get; set; } = null!;
+        public string CourtName { get; set; } = string.Empty;
     }
 }
