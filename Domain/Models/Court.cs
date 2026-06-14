@@ -16,5 +16,8 @@ namespace Reservation.Domain.Models
 
         public int SportId { get; set; }
         public Sport Sport { get; set; }
+
+        public List<TimeSlot> TimeSlots { get; set; } = new();
+
     }
 }

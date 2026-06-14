@@ -55,7 +55,7 @@ namespace Infrastructure
                 entity.Property(t => t.EndTime).IsRequired();
 
                 entity.HasOne(t => t.Court)
-                      .WithMany()
+                      .WithMany(c => c.TimeSlots)  
                       .HasForeignKey(t => t.CourtId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
