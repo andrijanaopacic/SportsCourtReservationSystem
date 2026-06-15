@@ -156,5 +156,21 @@ namespace Reservation.API.Controllers
                 TimeSlotId = i.TimeSlotId
             }).ToList()
         };
+
+        // GET /api/reservations/court/{courtId}
+        [HttpGet("court/{courtId}")]
+        public IActionResult GetByCourt(int courtId, [FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate)
+        {
+            var reservations = _uow.Reservations.GetAll()
+                .Where(r => r.Status != ReservationStatus.CANCELLED)
+                .Where(r => startDate == null || r.ReservationItems.Any(i => i.Date >= startDate))
+                .Where(r => endDate == null || r.ReservationItems.Any(i => i.Date <= endDate))
+                .Where(r => r.ReservationItems.Any(i => i.TimeSlot.CourtId == courtId)) // Pretpostavljam da imaš CourtId u ReservationItem
+                .ToList();
+
+            var dtos = reservations.Select(MapToDto).ToList();
+            return Ok(dtos);
+        }
+
     }
 }
