@@ -22,6 +22,8 @@ namespace Infrastructure
         public ICourtRepository Courts => _courts ??= new CourtRepository(_context);
         public ITimeSlotRepository TimeSlots => _timeSlots ??= new TimeSlotRepository(_context);
 
+        public IReservationRepository Reservations => throw new NotImplementedException();
+
         public void Dispose() =>  _context.Dispose();
 
         public int SaveChanges() => _context.SaveChanges();

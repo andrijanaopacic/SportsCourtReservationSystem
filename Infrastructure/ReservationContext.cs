@@ -17,6 +17,9 @@ namespace Infrastructure
         public DbSet<Court> Courts { get; set; }
         public DbSet<TimeSlot> TimeSlots { get; set; }
 
+        public DbSet<ReservationEntity> Reservations { get; set; }
+        public DbSet<ReservationItem> ReservationItems { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -63,6 +66,28 @@ namespace Infrastructure
             modelBuilder.Entity<TimeSlot>()
                 .Property(t => t.Price)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ReservationEntity>(entity =>
+            {
+                entity.HasKey(r => r.ReservationId);
+                entity.Property(r => r.TotalPrice).HasPrecision(18, 2);
+                entity.Property(r => r.Status).HasConversion<string>();
+
+                entity.HasMany(r => r.ReservationItems)
+                      .WithOne(i => i.Reservation)
+                      .HasForeignKey(i => i.ReservationId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ReservationItem>(entity =>
+            {
+                entity.HasKey(i => new { i.ReservationId, i.RowNumber });
+
+                entity.HasOne(i => i.TimeSlot)
+                      .WithMany()
+                      .HasForeignKey(i => i.TimeSlotId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
         }
     }
 }

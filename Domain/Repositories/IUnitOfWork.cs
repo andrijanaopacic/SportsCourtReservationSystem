@@ -10,6 +10,8 @@ namespace Reservation.Domain.Repositories
         ICourtRepository Courts { get; }
         ITimeSlotRepository TimeSlots { get; }
 
+        IReservationRepository Reservations { get; }
+
         int SaveChanges();
     }
 }
