@@ -28,7 +28,7 @@ export const updateCourt = (id, data) => api.put(`/courts/${id}`, data);
 export const deleteCourt = (id) => api.delete(`/courts/${id}`);
 export const getCourtsBySport = (sportId) => api.get(`/courts/by-sport/${sportId}`);
 
-// TimeSlots 
+// TimeSlots
 export const getTimeSlots = (params) => api.get('/timeslots', { params });
 export const getTimeSlotById = (id) => api.get(`/timeslots/${id}`);
 export const getTimeSlotsByCourt = (courtId) => api.get(`/timeslots/by-court/${courtId}`);
@@ -40,3 +40,12 @@ export const deleteTimeSlot = (id) => api.delete(`/timeslots/${id}`);
 export const login = (data) => api.post('/auth/login', data);
 export const register = (data) => api.post('/auth/register', data);
 export const getMe = () => api.get('/auth/me');
+
+// Reservations
+export const getReservations = (params) => api.get('/reservations', { params });
+export const getMyReservations = () => api.get('/reservations/my');
+export const getReservationById = (id) => api.get(`/reservations/${id}`);
+export const createReservation = (data) => api.post('/reservations', data);
+export const cancelReservation = (id) => api.put(`/reservations/${id}/cancel`);
+export const getCourtReservations = (courtId, params) =>
+    api.get(`/reservations/court/${courtId}`, { params });

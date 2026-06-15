@@ -12,6 +12,9 @@ namespace Reservation.Infrastructure.Repositories
     {
         public ReservationRepository(ReservationContext ctx) : base(ctx) { }
 
+        public new IEnumerable<ReservationEntity> GetAll() =>
+            Context.Reservations.Include(r => r.ReservationItems).ToList();
+
         public IEnumerable<ReservationEntity> GetByUser(string userId) =>
             Context.Reservations.Include(r => r.ReservationItems).Where(r => r.ApplicationUserId == userId);
 

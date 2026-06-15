@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Reservation.API.DTOs.Reservation;
 using Reservation.API.Services;
 using Reservation.Domain.Models;
 using Reservation.Domain.Repositories;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -161,15 +164,18 @@ namespace Reservation.API.Controllers
         [HttpGet("court/{courtId}")]
         public IActionResult GetByCourt(int courtId, [FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate)
         {
+            var courtSlotIds = _uow.TimeSlots.GetByCourt(courtId)
+                .Select(s => s.TimeSlotId)
+                .ToHashSet();
+
             var reservations = _uow.Reservations.GetAll()
                 .Where(r => r.Status != ReservationStatus.CANCELLED)
+                .Where(r => r.ReservationItems.Any(i => courtSlotIds.Contains(i.TimeSlotId)))
                 .Where(r => startDate == null || r.ReservationItems.Any(i => i.Date >= startDate))
                 .Where(r => endDate == null || r.ReservationItems.Any(i => i.Date <= endDate))
-                .Where(r => r.ReservationItems.Any(i => i.TimeSlot.CourtId == courtId)) // Pretpostavljam da imaš CourtId u ReservationItem
                 .ToList();
 
-            var dtos = reservations.Select(MapToDto).ToList();
-            return Ok(dtos);
+            return Ok(reservations.Select(MapToDto).ToList());
         }
 
     }

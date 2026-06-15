@@ -13,10 +13,19 @@ function Navbar() {
     navigate('/login');
   };
 
+
+
   const links = [
     { path: '/', label: 'Sports' },
     { path: '/courts', label: 'Courts' },
     { path: '/timeslots', label: 'Time Slots' },
+
+    { path: '/reservations/create', label: 'Courts' }, 
+    { path: '/confirm-reservation', label: 'Reservation cart' },
+    { path: '/reservations', label: 'Reservations' },
+   
+   
+
   ];
 
   return (

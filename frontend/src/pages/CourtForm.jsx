@@ -1,131 +1,153 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getCourts, deleteCourt } from '../services/api';
-import Modal from '../components/Modal';
+import { useNavigate, useParams } from 'react-router-dom';
+import { createCourt, getCourtById, updateCourt, getSports } from '../services/api';
 
-function CourtsList() {
-  const [courts, setCourts] = useState([]);
-  const [name, setName] = useState('');
-  const [isIndoor, setIsIndoor] = useState('');
+function CourtForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = id && id !== 'new';
+
+  const [form, setForm] = useState({
+    name: '',
+    location: '',
+    description: '',
+    pricePerHour: '',
+    isIndoor: false,
+    sportId: ''
+  });
+  const [sports, setSports] = useState([]);
   const [error, setError] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
 
-  useEffect(() => { fetchCourts(); }, []);
+  useEffect(() => {
+    getSports().then(res => setSports(res.data));
 
-  const fetchCourts = async () => {
-    try {
-      const params = {};
-      if (name) params.name = name;
-      if (isIndoor !== '') params.isIndoor = isIndoor;
-      const res = await getCourts(params);
-      setCourts(res.data);
-    } catch {
-      setError('Failed to load courts.');
+    if (isEdit) {
+      getCourtById(id).then(res => {
+        const c = res.data;
+        setForm({
+          name: c.name,
+          location: c.location,
+          description: c.description,
+          pricePerHour: c.pricePerHour,
+          isIndoor: c.isIndoor,
+          sportId: c.sportId ?? ''
+        });
+      });
     }
-  };
+  }, [id]);
 
-  const handleShowAll = async () => {
-    setName('');
-    setIsIndoor('');
+  const handleSubmit = async () => {
+    setError('');
     try {
-      const res = await getCourts({});
-      setCourts(res.data);
-    } catch {
-      setError('Failed to load courts.');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await deleteCourt(id);
-      fetchCourts();
+      const data = {
+        name: form.name,
+        location: form.location,
+        description: form.description,
+        pricePerHour: parseFloat(form.pricePerHour),
+        isIndoor: form.isIndoor,
+        sportId: parseInt(form.sportId)
+      };
+      if (isEdit) {
+        await updateCourt(id, data);
+      } else {
+        await createCourt(data);
+      }
+      navigate('/courts');
     } catch (err) {
-      setModalMessage(err.response?.data || 'Cannot delete court.');
+      setError(err.response?.data || 'Something went wrong.');
     }
   };
 
   return (
     <div className="page">
-      <Modal message={modalMessage} onClose={() => setModalMessage('')} />
-
       <div className="page-header">
         <div>
-          <div className="page-title">Courts</div>
-          <div className="page-subtitle">Browse & reserve</div>
+          <div className="page-title">{isEdit ? 'Edit Court' : 'New Court'}</div>
+          <div className="page-subtitle">{isEdit ? 'Update court details' : 'Add a new court'}</div>
         </div>
-        <Link to="/courts/new">
-          <button className="btn-primary">+ Add Court</button>
-        </Link>
+        <button className="btn-ghost" onClick={() => navigate('/courts')}>← Back</button>
       </div>
 
-      <div className="filter-bar">
+      <div style={{ maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="form-group">
-          <label className="form-label">Search</label>
+          <label className="form-label">Court Name</label>
           <input
             className="form-input"
-            placeholder="Court name..."
-            value={name}
-            onChange={e => setName(e.target.value)}
-            style={{ width: '220px' }}
+            placeholder="e.g. Center Court"
+            value={form.name}
+            onChange={e => setForm({ ...form, name: e.target.value })}
           />
         </div>
+
         <div className="form-group">
-          <label className="form-label">Type</label>
+          <label className="form-label">Location</label>
+          <input
+            className="form-input"
+            placeholder="e.g. Novi Sad, Hall A"
+            value={form.location}
+            onChange={e => setForm({ ...form, location: e.target.value })}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Description</label>
+          <input
+            className="form-input"
+            placeholder="Optional description"
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Price per Hour (RSD)</label>
+          <input
+            className="form-input"
+            type="number"
+            placeholder="e.g. 1200"
+            value={form.pricePerHour}
+            onChange={e => setForm({ ...form, pricePerHour: e.target.value })}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Sport</label>
           <select
             className="form-select"
-            value={isIndoor}
-            onChange={e => setIsIndoor(e.target.value)}
-            style={{ width: '160px' }}
+            value={form.sportId}
+            onChange={e => setForm({ ...form, sportId: e.target.value })}
           >
-            <option value="">All types</option>
-            <option value="true">Indoor</option>
-            <option value="false">Outdoor</option>
+            <option value="">-- Select sport --</option>
+            {sports.map(s => (
+              <option key={s.sportId} value={s.sportId}>{s.name}</option>
+            ))}
           </select>
         </div>
-        <button className="btn-ghost" onClick={fetchCourts}>Search</button>
-        <button className="btn-ghost" onClick={handleShowAll}>Show All</button>
+
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.isIndoor}
+              onChange={e => setForm({ ...form, isIndoor: e.target.checked })}
+            />
+            Indoor court
+          </label>
+        </div>
+
+        {error && <div className="error-msg">{error}</div>}
+
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button className="btn-primary" onClick={handleSubmit}>
+            {isEdit ? 'Save Changes' : 'Save Court'}
+          </button>
+          <button className="btn-ghost" onClick={() => navigate('/courts')}>
+            Cancel
+          </button>
+        </div>
       </div>
-
-      {error && <div className="error-msg">{error}</div>}
-
-      <table>
-        <thead>
-          <tr>
-            <th>Court</th>
-            <th>Sport</th>
-            <th>Location</th>
-            <th>Price / hr</th>
-            <th>Type</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {courts.map(court => (
-            <tr key={court.courtId}>
-              <td className="td-name">{court.name}</td>
-              <td>{court.sportName}</td>
-              <td>{court.location}</td>
-              <td>{court.pricePerHour} RSD</td>
-              <td>
-                <span className={`badge ${court.isIndoor ? 'badge-indoor' : 'badge-outdoor'}`}>
-                  {court.isIndoor ? 'Indoor' : 'Outdoor'}
-                </span>
-              </td>
-              <td className="actions">
-                <Link to={`/courts/${court.courtId}`}>
-                  <button className="btn-ghost">Edit</button>
-                </Link>
-                <span className="divider">|</span>
-                <button className="btn-danger" onClick={() => handleDelete(court.courtId)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }
 
-export default CourtsList;
+export default CourtForm;
