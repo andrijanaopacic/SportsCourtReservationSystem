@@ -8,11 +8,11 @@ namespace Reservation.API.Validators.Auth
         public LoginRequestValidator()
         {
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email je obavezan.")
-                .EmailAddress().WithMessage("Email nije u ispravnom formatu.");
+                .NotEmpty().WithMessage("Email is required.")
+                .EmailAddress().WithMessage("Email is not in a valid format.");
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Lozinka je obavezna.");
+                .NotEmpty().WithMessage("Password is required.");
         }
     }
 }

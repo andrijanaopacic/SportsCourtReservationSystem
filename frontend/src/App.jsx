@@ -1,23 +1,35 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import SportsList from './pages/SportsList';
 import SportForm from './pages/SportForm';
 import CourtsList from './pages/CourtsList';
 import CourtForm from './pages/CourtForm';
+import TimeSlotsList from './pages/TimeSlotsList';
+import TimeSlotForm from './pages/TimeSlotForm';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<SportsList />} />
-        <Route path="/sports/new" element={<SportForm />} />
-        <Route path="/sports/:id" element={<SportForm />} />
-        <Route path="/courts" element={<CourtsList />} />
-        <Route path="/courts/new" element={<CourtForm />} />
-        <Route path="/courts/:id" element={<CourtForm />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<SportsList />} />
+          <Route path="/sports/new" element={<SportForm />} />
+          <Route path="/sports/:id" element={<SportForm />} />
+          <Route path="/courts" element={<CourtsList />} />
+          <Route path="/courts/new" element={<CourtForm />} />
+          <Route path="/courts/:id" element={<CourtForm />} />
+          <Route path="/timeslots" element={<TimeSlotsList />} />
+          <Route path="/timeslots/new" element={<TimeSlotForm />} />
+          <Route path="/timeslots/:id" element={<TimeSlotForm />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

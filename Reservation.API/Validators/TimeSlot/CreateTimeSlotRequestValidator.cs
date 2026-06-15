@@ -8,15 +8,18 @@ namespace Reservation.API.Validators.TimeSlot
         public CreateTimeSlotRequestValidator()
         {
             RuleFor(x => x.CourtId)
-                .GreaterThan(0).WithMessage("CourtId mora biti veći od 0.");
+                .GreaterThan(0).WithMessage("CourtId must be greater than 0.");
 
             RuleFor(x => x.StartTime)
-                .NotEmpty().WithMessage("Vreme početka je obavezno.");
+                .NotEmpty().WithMessage("Start time is required.");
 
             RuleFor(x => x.EndTime)
-                .NotEmpty().WithMessage("Vreme završetka je obavezno.")
+                .NotEmpty().WithMessage("End time is required.")
                 .Must((req, endTime) => endTime > req.StartTime)
-                .WithMessage("Vreme završetka mora biti posle vremena početka.");
+                .WithMessage("End time must be after the start time.");
+
+            RuleFor(x => x.Price)
+                .GreaterThanOrEqualTo(0).WithMessage("Price cannot be negative.");
         }
     }
 }

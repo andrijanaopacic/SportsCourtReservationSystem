@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservation.API.DTOs.TimeSlot;
+using Reservation.API.Extensions;
 using Reservation.API.Services;
 using Reservation.Domain.Models;
 using Reservation.Domain.Repositories;
@@ -16,9 +17,10 @@ namespace Reservation.API.Controllers
         private readonly IValidator<CreateTimeSlotRequest> _validator;
         private readonly ICacheService _cache;
 
-        private const string AllSlotsKey = "timeslots:all";
+        private const string AllSlotsKeyPrefix = "timeslots:all:";
         private const string SlotByCourtPrefix = "timeslots:court:";
         private const string SlotByIdPrefix = "timeslots:id:";
+        private const string AvailableSlotsKey = "timeslots:available";
 
         public TimeSlotsController(
             IUnitOfWork uow,
@@ -30,27 +32,38 @@ namespace Reservation.API.Controllers
             _cache = cache;
         }
 
-        // GET /api/timeslots
+        private static TimeSlotDto MapToDto(TimeSlot t, string courtName) => new()
+        {
+            TimeSlotId = t.TimeSlotId,
+            StartTime = t.StartTime,
+            EndTime = t.EndTime,
+            Duration = t.Duration,
+            Price = t.Price,
+            IsAvailable = t.IsAvailable,
+            CourtId = t.CourtId,
+            CourtName = courtName
+        };
+
+        // GET /api/timeslots?isAvailable=true&minPrice=500&maxPrice=2000
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] bool? isAvailable,
+            [FromQuery] decimal? minPrice,
+            [FromQuery] decimal? maxPrice)
         {
-            var cached = await _cache.GetAsync<List<TimeSlotDto>>(AllSlotsKey);
-            if (cached != null)
-                return Ok(cached);
+            var cacheKey = $"{AllSlotsKeyPrefix}{isAvailable}:{minPrice}:{maxPrice}";
+            var cached = await _cache.GetAsync<List<TimeSlotDto>>(cacheKey);
+            if (cached != null) return Ok(cached);
 
             var slots = _uow.TimeSlots.GetAll()
-                .Select(t => new TimeSlotDto
-                {
-                    TimeSlotId = t.TimeSlotId,
-                    StartTime = t.StartTime,
-                    EndTime = t.EndTime,
-                    CourtId = t.CourtId,
-                    CourtName = t.Court?.Name ?? string.Empty
-                })
+                .FilterByAvailability(isAvailable)
+                .FilterByMinPrice(minPrice)
+                .FilterByMaxPrice(maxPrice)
+                .Select(t => MapToDto(t, t.Court?.Name ?? string.Empty))
                 .ToList();
 
-            await _cache.SetAsync(AllSlotsKey, slots, TimeSpan.FromMinutes(10));
+            await _cache.SetAsync(cacheKey, slots, TimeSpan.FromMinutes(10));
             return Ok(slots);
         }
 
@@ -61,21 +74,12 @@ namespace Reservation.API.Controllers
         {
             var cacheKey = SlotByIdPrefix + id;
             var cached = await _cache.GetAsync<TimeSlotDto>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
+            if (cached != null) return Ok(cached);
 
             var slot = _uow.TimeSlots.GetByIdWithCourt(id);
-            if (slot == null) return NotFound($"Termin sa id {id} nije pronađen.");
+            if (slot == null) return NotFound($"Time slot with ID {id} was not found.");
 
-            var dto = new TimeSlotDto
-            {
-                TimeSlotId = slot.TimeSlotId,
-                StartTime = slot.StartTime,
-                EndTime = slot.EndTime,
-                CourtId = slot.CourtId,
-                CourtName = slot.Court?.Name ?? string.Empty
-            };
-
+            var dto = MapToDto(slot, slot.Court?.Name ?? string.Empty);
             await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(10));
             return Ok(dto);
         }
@@ -86,29 +90,38 @@ namespace Reservation.API.Controllers
         public async Task<IActionResult> GetByCourt(int courtId)
         {
             var court = _uow.Courts.GetById(courtId);
-            if (court == null) return NotFound($"Teren sa id {courtId} nije pronađen.");
+            if (court == null) return NotFound($"Court with ID {courtId} was not found.");
 
             var cacheKey = SlotByCourtPrefix + courtId;
             var cached = await _cache.GetAsync<List<TimeSlotDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
+            if (cached != null) return Ok(cached);
 
             var slots = _uow.TimeSlots.GetByCourt(courtId)
-                .Select(t => new TimeSlotDto
-                {
-                    TimeSlotId = t.TimeSlotId,
-                    StartTime = t.StartTime,
-                    EndTime = t.EndTime,
-                    CourtId = t.CourtId,
-                    CourtName = court.Name
-                })
+                .Select(t => MapToDto(t, court.Name))
                 .ToList();
 
             await _cache.SetAsync(cacheKey, slots, TimeSpan.FromMinutes(10));
             return Ok(slots);
         }
 
-        // POST /api/timeslots —> only Admin
+        // GET /api/timeslots/available
+        [HttpGet("available")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailable()
+        {
+            var cached = await _cache.GetAsync<List<TimeSlotDto>>(AvailableSlotsKey);
+            if (cached != null) return Ok(cached);
+
+            var slots = _uow.TimeSlots.GetAll()
+                .Where(t => t.IsAvailable)
+                .Select(t => MapToDto(t, t.Court?.Name ?? string.Empty))
+                .ToList();
+
+            await _cache.SetAsync(AvailableSlotsKey, slots, TimeSpan.FromMinutes(10));
+            return Ok(slots);
+        }
+
+        // POST /api/timeslots — Admin only
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] CreateTimeSlotRequest request)
@@ -119,38 +132,35 @@ namespace Reservation.API.Controllers
                     .Select(e => new { e.PropertyName, e.ErrorMessage }));
 
             var court = _uow.Courts.GetById(request.CourtId);
-            if (court == null) return NotFound($"Teren sa id {request.CourtId} nije pronađen.");
+            if (court == null) return NotFound($"Court with ID {request.CourtId} was not found.");
 
             var overlapping = _uow.TimeSlots.GetByCourt(request.CourtId)
                 .Any(t => t.StartTime < request.EndTime && t.EndTime > request.StartTime);
 
             if (overlapping)
-                return BadRequest("Na ovom terenu već postoji termin koji se preklapa sa zadatim vremenom.");
+                return BadRequest("An overlapping time slot already exists on this court.");
 
             var slot = new TimeSlot
             {
                 StartTime = request.StartTime,
                 EndTime = request.EndTime,
+                Duration = request.EndTime - request.StartTime,
+                Price = request.Price,
+                IsAvailable = request.IsAvailable,
                 CourtId = request.CourtId
             };
 
             _uow.TimeSlots.Add(slot);
             _uow.SaveChanges();
 
-            await _cache.RemoveAsync(AllSlotsKey);
+            await _cache.RemoveByPatternAsync(AllSlotsKeyPrefix + "*");
             await _cache.RemoveAsync(SlotByCourtPrefix + request.CourtId);
+            await _cache.RemoveAsync(AvailableSlotsKey);
 
-            return CreatedAtAction(nameof(GetById), new { id = slot.TimeSlotId }, new TimeSlotDto
-            {
-                TimeSlotId = slot.TimeSlotId,
-                StartTime = slot.StartTime,
-                EndTime = slot.EndTime,
-                CourtId = slot.CourtId,
-                CourtName = court.Name
-            });
+            return CreatedAtAction(nameof(GetById), new { id = slot.TimeSlotId }, MapToDto(slot, court.Name));
         }
 
-        // PUT /api/timeslots/{id} —> only Admin
+        // PUT /api/timeslots/{id} — Admin only
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateTimeSlotRequest request)
@@ -161,10 +171,10 @@ namespace Reservation.API.Controllers
                     .Select(e => new { e.PropertyName, e.ErrorMessage }));
 
             var slot = _uow.TimeSlots.GetById(id);
-            if (slot == null) return NotFound($"Termin sa id {id} nije pronađen.");
+            if (slot == null) return NotFound($"Time slot with ID {id} was not found.");
 
             var court = _uow.Courts.GetById(request.CourtId);
-            if (court == null) return NotFound($"Teren sa id {request.CourtId} nije pronađen.");
+            if (court == null) return NotFound($"Court with ID {request.CourtId} was not found.");
 
             var overlapping = _uow.TimeSlots.GetByCourt(request.CourtId)
                 .Any(t => t.TimeSlotId != id &&
@@ -172,49 +182,47 @@ namespace Reservation.API.Controllers
                           t.EndTime > request.StartTime);
 
             if (overlapping)
-                return BadRequest("Na ovom terenu već postoji termin koji se preklapa sa zadatim vremenom.");
+                return BadRequest("An overlapping time slot already exists on this court.");
 
             var oldCourtId = slot.CourtId;
 
             slot.StartTime = request.StartTime;
             slot.EndTime = request.EndTime;
+            slot.Duration = request.EndTime - request.StartTime;
+            slot.Price = request.Price;
+            slot.IsAvailable = request.IsAvailable;
             slot.CourtId = request.CourtId;
 
             _uow.TimeSlots.Update(slot);
             _uow.SaveChanges();
 
-            await _cache.RemoveAsync(AllSlotsKey);
+            await _cache.RemoveByPatternAsync(AllSlotsKeyPrefix + "*");
             await _cache.RemoveAsync(SlotByIdPrefix + id);
             await _cache.RemoveAsync(SlotByCourtPrefix + request.CourtId);
+            await _cache.RemoveAsync(AvailableSlotsKey);
             if (oldCourtId != request.CourtId)
                 await _cache.RemoveAsync(SlotByCourtPrefix + oldCourtId);
 
-            return Ok(new TimeSlotDto
-            {
-                TimeSlotId = slot.TimeSlotId,
-                StartTime = slot.StartTime,
-                EndTime = slot.EndTime,
-                CourtId = slot.CourtId,
-                CourtName = court.Name
-            });
+            return Ok(MapToDto(slot, court.Name));
         }
 
-        // DELETE /api/timeslots/{id} — only Admin
+        // DELETE /api/timeslots/{id} — Admin only
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var slot = _uow.TimeSlots.GetById(id);
-            if (slot == null) return NotFound($"Termin sa id {id} nije pronađen.");
+            if (slot == null) return NotFound($"Time slot with ID {id} was not found.");
 
             var courtId = slot.CourtId;
 
             _uow.TimeSlots.Remove(slot);
             _uow.SaveChanges();
 
-            await _cache.RemoveAsync(AllSlotsKey);
+            await _cache.RemoveByPatternAsync(AllSlotsKeyPrefix + "*");
             await _cache.RemoveAsync(SlotByIdPrefix + id);
             await _cache.RemoveAsync(SlotByCourtPrefix + courtId);
+            await _cache.RemoveAsync(AvailableSlotsKey);
 
             return NoContent();
         }

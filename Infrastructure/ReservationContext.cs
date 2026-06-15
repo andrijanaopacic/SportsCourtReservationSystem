@@ -59,6 +59,10 @@ namespace Infrastructure
                       .HasForeignKey(t => t.CourtId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<TimeSlot>()
+                .Property(t => t.Price)
+                .HasPrecision(18, 2);
         }
     }
 }
