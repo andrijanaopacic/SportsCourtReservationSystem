@@ -1,16 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Reservation.API.DTOs.Reservation;
 using Reservation.API.Services;
 using Reservation.Domain.Models;
 using Reservation.Domain.Repositories;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace Reservation.API.Controllers
 {
@@ -29,47 +23,59 @@ namespace Reservation.API.Controllers
             _cache = cache;
         }
 
+        // ── Automatsko ažuriranje statusa na osnovu datuma ────────────────
+        private void SyncStatus(ReservationEntity r)
+        {
+            if (r.Status == ReservationStatus.CANCELLED) return;
+            if (!r.ReservationItems.Any()) return;
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var dates = r.ReservationItems.Select(i => i.Date).ToList();
+
+            ReservationStatus computed;
+            if (dates.All(d => d < today))
+                computed = ReservationStatus.COMPLETED;
+            else if (dates.Any(d => d == today))
+                computed = ReservationStatus.ACTIVE;
+            else
+                computed = ReservationStatus.UPCOMING;
+
+            if (r.Status != computed)
+            {
+                r.Status = computed;
+                _uow.Reservations.Update(r);
+                _uow.SaveChanges();
+            }
+        }
+
+        private void SyncAll(IEnumerable<ReservationEntity> list)
+        {
+            foreach (var r in list) SyncStatus(r);
+        }
+
         // GET /api/reservations?status=UPCOMING
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? status)
         {
-            // Pokušaj iz keša (samo ako nema filtera po statusu)
-            if (status == null)
-            {
-                var cached = await _cache.GetAsync<List<ReservationDto>>(CacheKey);
-                if (cached != null)
-                    return Ok(cached);
-            }
+            var all = _uow.Reservations.GetAll().ToList();
+            SyncAll(all);
 
-            var reservations = status != null && Enum.TryParse<ReservationStatus>(status, out var s)
-                ? _uow.Reservations.GetByStatus(s)
-                : _uow.Reservations.GetAll();
+            var filtered = status != null && Enum.TryParse<ReservationStatus>(status, out var s)
+                ? all.Where(r => r.Status == s)
+                : all;
 
-            var dtos = reservations.Select(MapToDto).ToList();
-
-            if (status == null)
-                await _cache.SetAsync(CacheKey, dtos, TimeSpan.FromMinutes(5));
-
-            return Ok(dtos);
+            return Ok(filtered.Select(MapToDto).ToList());
         }
 
-        // GET /api/reservations/my — rezervacije ulogovanog korisnika
+        // GET /api/reservations/my
         [HttpGet("my")]
         [Authorize]
         public async Task<IActionResult> GetMine()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var cacheKey = $"{UserCacheKeyPrefix}{userId}";
-
-            var cached = await _cache.GetAsync<List<ReservationDto>>(cacheKey);
-            if (cached != null)
-                return Ok(cached);
-
-            var reservations = _uow.Reservations.GetByUser(userId);
-            var dtos = reservations.Select(MapToDto).ToList();
-
-            await _cache.SetAsync(cacheKey, dtos, TimeSpan.FromMinutes(5));
-            return Ok(dtos);
+            var reservations = _uow.Reservations.GetByUser(userId).ToList();
+            SyncAll(reservations);
+            return Ok(reservations.Select(MapToDto).ToList());
         }
 
         // GET /api/reservations/{id}
@@ -78,6 +84,7 @@ namespace Reservation.API.Controllers
         {
             var reservation = _uow.Reservations.GetByIdWithItems(id);
             if (reservation == null) return NotFound();
+            SyncStatus(reservation);
             return Ok(MapToDto(reservation));
         }
 
@@ -86,7 +93,15 @@ namespace Reservation.API.Controllers
         [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateReservationRequest request)
         {
-            // Konflikt: termin već rezervisan za isti datum
+            // Duplikat unutar requesta
+            var duplicateInRequest = request.Items
+                .GroupBy(i => (i.TimeSlotId, i.Date))
+                .FirstOrDefault(g => g.Count() > 1);
+
+            if (duplicateInRequest != null)
+                return BadRequest($"Termin {duplicateInRequest.Key.TimeSlotId} se pojavljuje više puta za datum {duplicateInRequest.Key.Date}.");
+
+            // Konflikt u bazi
             foreach (var item in request.Items)
             {
                 var conflict = _uow.Reservations.GetAll()
@@ -99,27 +114,127 @@ namespace Reservation.API.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            var items = request.Items.Select((item, idx) => new ReservationItem
+            {
+                RowNumber = idx + 1,
+                TimeSlotId = item.TimeSlotId,
+                Date = item.Date,
+                Price = _uow.TimeSlots.GetById(item.TimeSlotId)?.Price ?? 0
+            }).ToList();
+
+            // Odmah postavi ispravan status
+            var dates = items.Select(i => i.Date).ToList();
+            ReservationStatus initialStatus;
+            if (dates.All(d => d < today))
+                initialStatus = ReservationStatus.COMPLETED;
+            else if (dates.Any(d => d == today))
+                initialStatus = ReservationStatus.ACTIVE;
+            else
+                initialStatus = ReservationStatus.UPCOMING;
 
             var reservation = new ReservationEntity
             {
                 ApplicationUserId = userId,
-                Status = ReservationStatus.UPCOMING,
-                ReservationItems = request.Items.Select((item, idx) => new ReservationItem
-                {
-                    RowNumber = idx + 1,
-                    TimeSlotId = item.TimeSlotId,
-                    Date = item.Date,
-                    Price = _uow.TimeSlots.GetById(item.TimeSlotId)?.Price ?? 0
-                }).ToList()
+                Status = initialStatus,
+                ReservationItems = items,
+                TotalPrice = items.Sum(i => i.Price)
             };
 
-            reservation.TotalPrice = reservation.ReservationItems.Sum(i => i.Price);
             _uow.Reservations.Add(reservation);
             _uow.SaveChanges();
 
-            // Invalidacija keša
             await _cache.RemoveAsync(CacheKey);
             await _cache.RemoveAsync($"{UserCacheKeyPrefix}{userId}");
+
+            return Ok(MapToDto(reservation));
+        }
+
+        // PUT /api/reservations/{id}
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateReservationRequest request)
+        {
+            var reservation = _uow.Reservations.GetByIdWithItems(id);
+            if (reservation == null) return NotFound();
+
+            if (reservation.Status == ReservationStatus.CANCELLED)
+                return BadRequest("Nije moguće izmeniti otkazanu rezervaciju.");
+
+            if (!Enum.TryParse<ReservationStatus>(request.Status, out var newStatus))
+                return BadRequest($"Nepoznat status: {request.Status}.");
+
+            // Duplikat unutar requesta
+            var duplicateInRequest = request.Items
+                .GroupBy(i => (i.TimeSlotId, i.Date))
+                .FirstOrDefault(g => g.Count() > 1);
+
+            if (duplicateInRequest != null)
+                return BadRequest($"Termin {duplicateInRequest.Key.TimeSlotId} se pojavljuje više puta za datum {duplicateInRequest.Key.Date}.");
+
+            // ── Diff stavki ──────────────────────────────────────────────
+            var existingItems = reservation.ReservationItems.ToList();
+
+            var requestedKeys = request.Items
+                .Select(i => (i.TimeSlotId, i.Date))
+                .ToHashSet();
+
+            var existingKeys = existingItems
+                .Select(i => (i.TimeSlotId, i.Date))
+                .ToHashSet();
+
+            var toRemove = existingItems
+                .Where(i => !requestedKeys.Contains((i.TimeSlotId, i.Date)))
+                .ToList();
+
+            var toAdd = request.Items
+                .Where(i => !existingKeys.Contains((i.TimeSlotId, i.Date)))
+                .ToList();
+
+            // Konflikt check samo za nove stavke
+            foreach (var item in toAdd)
+            {
+                var conflict = _uow.Reservations.GetAll()
+                    .Where(r => r.ReservationId != id && r.Status != ReservationStatus.CANCELLED)
+                    .SelectMany(r => r.ReservationItems)
+                    .Any(i => i.TimeSlotId == item.TimeSlotId && i.Date == item.Date);
+
+                if (conflict)
+                    return BadRequest($"Termin {item.TimeSlotId} je već rezervisan za {item.Date}.");
+            }
+
+            foreach (var item in toRemove)
+                reservation.ReservationItems.Remove(item);
+
+            int nextRow = reservation.ReservationItems.Any()
+                ? reservation.ReservationItems.Max(i => i.RowNumber) + 1
+                : 1;
+
+            foreach (var item in toAdd)
+            {
+                reservation.ReservationItems.Add(new ReservationItem
+                {
+                    RowNumber = nextRow++,
+                    TimeSlotId = item.TimeSlotId,
+                    Date = item.Date,
+                    Price = _uow.TimeSlots.GetById(item.TimeSlotId)?.Price ?? 0
+                });
+            }
+
+            reservation.TotalPrice = reservation.ReservationItems.Sum(i => i.Price);
+            // Status koji admin/klijent šalje se prihvata, ali se ne overriduje automatskim —
+            // SyncStatus će to srediti pri sledećem GET-u
+            reservation.Status = newStatus;
+
+            _uow.Reservations.Update(reservation);
+            _uow.SaveChanges();
+
+            // Odmah sinhronizuj nakon snimanja
+            SyncStatus(reservation);
+
+            await _cache.RemoveAsync(CacheKey);
+            await _cache.RemoveAsync($"{UserCacheKeyPrefix}{reservation.ApplicationUserId}");
 
             return Ok(MapToDto(reservation));
         }
@@ -156,7 +271,10 @@ namespace Reservation.API.Controllers
                 RowNumber = i.RowNumber,
                 Price = i.Price,
                 Date = i.Date,
-                TimeSlotId = i.TimeSlotId
+                TimeSlotId = i.TimeSlotId,
+                StartTime = i.TimeSlot?.StartTime.ToString(@"HH\:mm") ?? string.Empty,
+                EndTime = i.TimeSlot?.EndTime.ToString(@"HH\:mm") ?? string.Empty,
+                CourtName = i.TimeSlot?.Court?.Name ?? string.Empty
             }).ToList()
         };
 
@@ -177,6 +295,5 @@ namespace Reservation.API.Controllers
 
             return Ok(reservations.Select(MapToDto).ToList());
         }
-
     }
 }

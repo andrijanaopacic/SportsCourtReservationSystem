@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 import Navbar from './components/Navbar';
 
@@ -22,6 +23,7 @@ import CourtBooking from './pages/CourtBooking';
 
 import ConfirmReservation from './pages/ConfirmReservation';
 import Reservation from './pages/Reservation';
+import AdminReservations from './pages/AdminReservations';
 
 function App() {
   return (
@@ -30,31 +32,42 @@ function App() {
         <Navbar />
 
         <Routes>
-          {/* SPORTS */}
+          {/* PUBLIC */}
           <Route path="/" element={<SportsList />} />
           <Route path="/sports/new" element={<SportForm />} />
           <Route path="/sports/:id" element={<SportForm />} />
 
-          {/* COURTS */}
           <Route path="/courts" element={<CourtsList />} />
           <Route path="/courts/new" element={<CourtForm />} />
           <Route path="/courts/:id" element={<CourtForm />} />
 
-          {/* TIMESLOTS */}
           <Route path="/timeslots" element={<TimeSlotsList />} />
           <Route path="/timeslots/new" element={<TimeSlotForm />} />
           <Route path="/timeslots/:id" element={<TimeSlotForm />} />
 
-          <Route path="/reservations/create" element={<CourtReserve />} />
-          <Route path="/courts/:courtId/reserve" element={<CourtBooking />} />
           <Route path="/courts/:courtId/calendar" element={<CourtCalendar />} />
-         
-          <Route path="/confirm-reservation" element={<ConfirmReservation />} />
-          <Route path="/reservations" element={<Reservation />} />
 
-          {/* AUTH */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* KLIJENT ONLY */}
+          <Route path="/reservations/create" element={
+            <ProtectedRoute role="client"><CourtReserve /></ProtectedRoute>
+          } />
+          <Route path="/courts/:courtId/reserve" element={
+            <ProtectedRoute role="client"><CourtBooking /></ProtectedRoute>
+          } />
+          <Route path="/confirm-reservation" element={
+            <ProtectedRoute role="client"><ConfirmReservation /></ProtectedRoute>
+          } />
+          <Route path="/reservations" element={
+            <ProtectedRoute role="client"><Reservation /></ProtectedRoute>
+          } />
+
+          {/* ADMIN ONLY */}
+          <Route path="/admin/reservations" element={
+            <ProtectedRoute role="admin"><AdminReservations /></ProtectedRoute>
+          } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

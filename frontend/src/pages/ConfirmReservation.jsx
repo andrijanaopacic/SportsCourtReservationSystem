@@ -153,7 +153,7 @@ function ConfirmReservation() {
                             <button
                                 className="btn-ghost"
                                 onClick={() =>
-                                    navigate('/courts')
+                                    navigate('/reservations/create')
                                 }
                             >
                                 Continue Selecting

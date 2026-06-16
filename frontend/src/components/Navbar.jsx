@@ -6,39 +6,49 @@ function Navbar() {
   const navigate = useNavigate();
   const { user, logoutUser, isAdmin } = useAuth();
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + '/');
 
   const handleLogout = () => {
     logoutUser();
     navigate('/login');
   };
 
-
-
-  const links = [
+  const adminLinks = [
     { path: '/', label: 'Sports' },
     { path: '/courts', label: 'Courts' },
     { path: '/timeslots', label: 'Time Slots' },
-
-    { path: '/reservations/create', label: 'Courts' }, 
-    { path: '/confirm-reservation', label: 'Reservation cart' },
-    { path: '/reservations', label: 'Reservations' },
-   
-   
-
+    { path: '/admin/reservations', label: 'Reservations' },
   ];
+
+  const clientLinks = [
+    { path: '/', label: 'Sports' },
+    { path: '/courts', label: 'Courts' },
+    { path: '/timeslots', label: 'Time Slots' },
+    { path: '/reservations/create', label: 'Courts' },
+    { path: '/confirm-reservation', label: 'Reservation Cart' },
+    { path: '/reservations', label: 'My Reservations' },
+  ];
+
+  const guestLinks = [
+    { path: '/', label: 'Sports' },
+    { path: '/courts', label: 'Courts' },
+    { path: '/timeslots', label: 'Time Slots' },
+  ];
+
+  const links = !user ? guestLinks : isAdmin() ? adminLinks : clientLinks;
 
   return (
     <>
       <nav style={{
         background: 'var(--mahogany)', padding: '0 48px',
         display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', height: '64px'
+        justifyContent: 'space-between', height: '64px',
       }}>
         <Link to="/" style={{
           fontFamily: 'Cormorant Garamond, serif', fontSize: '22px',
           fontWeight: 300, letterSpacing: '0.2em', color: 'var(--cream)',
-          textTransform: 'uppercase', textDecoration: 'none'
+          textTransform: 'uppercase', textDecoration: 'none',
         }}>
           Court Reserve
         </Link>
@@ -49,13 +59,12 @@ function Navbar() {
               fontFamily: 'Inter, sans-serif', fontSize: '11px',
               letterSpacing: '0.15em', textTransform: 'uppercase',
               color: isActive(path) ? 'var(--cream)' : 'var(--sage)',
-              textDecoration: 'none', transition: 'color 0.2s'
+              textDecoration: 'none', transition: 'color 0.2s',
             }}>
               {label}
             </Link>
           ))}
 
-          {/* Separator */}
           <div style={{ width: '1px', height: '20px', background: 'rgba(176,186,153,0.3)' }} />
 
           {user ? (
@@ -86,18 +95,14 @@ function Navbar() {
               <Link to="/login" style={{
                 fontSize: '11px', letterSpacing: '0.12em',
                 textTransform: 'uppercase', color: 'var(--sage)',
-                textDecoration: 'none', transition: 'color 0.2s',
-              }}>
-                Sign In
-              </Link>
+                textDecoration: 'none',
+              }}>Sign In</Link>
               <Link to="/register" style={{
                 fontSize: '11px', letterSpacing: '0.12em',
                 textTransform: 'uppercase', color: 'var(--cream)',
                 textDecoration: 'none', border: '1px solid var(--cream)',
                 padding: '5px 14px',
-              }}>
-                Register
-              </Link>
+              }}>Register</Link>
             </div>
           )}
         </div>

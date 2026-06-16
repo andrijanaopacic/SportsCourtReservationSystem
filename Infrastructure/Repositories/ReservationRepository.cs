@@ -13,16 +13,32 @@ namespace Reservation.Infrastructure.Repositories
         public ReservationRepository(ReservationContext ctx) : base(ctx) { }
 
         public new IEnumerable<ReservationEntity> GetAll() =>
-            Context.Reservations.Include(r => r.ReservationItems).ToList();
+            Context.Reservations
+                .Include(r => r.ReservationItems)
+                    .ThenInclude(i => i.TimeSlot)
+                        .ThenInclude(t => t.Court)
+                .ToList();
 
         public IEnumerable<ReservationEntity> GetByUser(string userId) =>
-            Context.Reservations.Include(r => r.ReservationItems).Where(r => r.ApplicationUserId == userId);
+            Context.Reservations
+                .Include(r => r.ReservationItems)
+                    .ThenInclude(i => i.TimeSlot)
+                        .ThenInclude(t => t.Court)
+                .Where(r => r.ApplicationUserId == userId);
 
         public IEnumerable<ReservationEntity> GetByStatus(ReservationStatus status) =>
-            Context.Reservations.Include(r => r.ReservationItems).Where(r => r.Status == status);
+            Context.Reservations
+                .Include(r => r.ReservationItems)
+                    .ThenInclude(i => i.TimeSlot)
+                        .ThenInclude(t => t.Court)
+                .Where(r => r.Status == status);
 
         public ReservationEntity? GetByIdWithItems(int id) =>
-            Context.Reservations.Include(r => r.ReservationItems).ThenInclude(i => i.TimeSlot)
+            Context.Reservations
+                .Include(r => r.ReservationItems)
+                    .ThenInclude(i => i.TimeSlot)
+                        .ThenInclude(t => t.Court)
                 .FirstOrDefault(r => r.ReservationId == id);
     }
 }
+
