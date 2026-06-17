@@ -100,6 +100,12 @@ namespace Reservation.API.Controllers
 
             if (duplicateInRequest != null)
                 return BadRequest($"Termin {duplicateInRequest.Key.TimeSlotId} se pojavljuje više puta za datum {duplicateInRequest.Key.Date}.");
+            
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var pastItems = request.Items.Where(i => i.Date < today).ToList();
+
+            if (pastItems.Any())
+                return BadRequest($"Ne možete rezervisati termine za prošle datume. Datum {pastItems.First().Date} je već prošao.");
 
             // Konflikt u bazi
             foreach (var item in request.Items)
@@ -114,7 +120,6 @@ namespace Reservation.API.Controllers
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var today = DateOnly.FromDateTime(DateTime.Today);
 
             var items = request.Items.Select((item, idx) => new ReservationItem
             {
