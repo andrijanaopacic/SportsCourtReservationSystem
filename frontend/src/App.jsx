@@ -33,13 +33,6 @@ function App() {
 
         <Routes>
           {/* PUBLIC */}
-          <Route path="/" element={<SportsList />} />
-          <Route path="/sports/new" element={<SportForm />} />
-          <Route path="/sports/:id" element={<SportForm />} />
-
-          <Route path="/courts" element={<CourtsList />} />
-          <Route path="/courts/new" element={<CourtForm />} />
-          <Route path="/courts/:id" element={<CourtForm />} />
 
           <Route path="/timeslots" element={<TimeSlotsList />} />
           <Route path="/timeslots/new" element={<TimeSlotForm />} />
@@ -67,6 +60,25 @@ function App() {
           {/* ADMIN ONLY */}
           <Route path="/admin/reservations" element={
             <ProtectedRoute role="admin"><AdminReservations /></ProtectedRoute>
+          } />
+          <Route path="/" element={
+          <ProtectedRoute role="admin"><SportsList /></ProtectedRoute>
+          } />
+          <Route path="/sports/new" element={
+            <ProtectedRoute role="admin"><SportForm /></ProtectedRoute>
+          } />
+          <Route path="/sports/:id" element={
+            <ProtectedRoute role="admin"><SportForm /></ProtectedRoute>
+          } />
+
+          <Route path="/courts" element={
+            <ProtectedRoute role="admin"><CourtsList /></ProtectedRoute>
+          } />
+          <Route path="/courts/new" element={
+            <ProtectedRoute role="admin"><CourtForm /></ProtectedRoute>
+          } />
+          <Route path="/courts/:id" element={
+            <ProtectedRoute role="admin"><CourtForm /></ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>

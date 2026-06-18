@@ -16,10 +16,10 @@ function CourtForm() {
     sportId: ''
   });
   const [sports, setSports] = useState([]);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
-    getSports().then(res => setSports(res.data));
+    getSports({}).then(res => setSports(res.data));
 
     if (isEdit) {
       getCourtById(id).then(res => {
@@ -30,22 +30,23 @@ function CourtForm() {
           description: c.description,
           pricePerHour: c.pricePerHour,
           isIndoor: c.isIndoor,
-          sportId: c.sportId ?? ''
+          sportId: c.sportId ? String(c.sportId) : ''
         });
       });
     }
   }, [id]);
 
   const handleSubmit = async () => {
-    setError('');
+    setErrors([]);
+
     try {
       const data = {
         name: form.name,
         location: form.location,
-        description: form.description,
-        pricePerHour: parseFloat(form.pricePerHour),
+        description: form.description || '',
+        pricePerHour: parseFloat(form.pricePerHour) || 0,
         isIndoor: form.isIndoor,
-        sportId: parseInt(form.sportId)
+        sportId: parseInt(form.sportId) || 0
       };
       if (isEdit) {
         await updateCourt(id, data);
@@ -54,7 +55,12 @@ function CourtForm() {
       }
       navigate('/courts');
     } catch (err) {
-      setError(err.response?.data || 'Something went wrong.');
+      const data = err.response?.data;
+      if (Array.isArray(data)) {
+        setErrors(data.map(e => e.errorMessage));
+      } else {
+        setErrors([data || 'Something went wrong.']);
+      }
     }
   };
 
@@ -90,7 +96,10 @@ function CourtForm() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Description</label>
+          <label className="form-label">
+            Description{' '}
+            <span style={{ color: 'var(--sage)', fontSize: '10px', letterSpacing: '0.05em' }}>optional</span>
+          </label>
           <input
             className="form-input"
             placeholder="Optional description"
@@ -117,10 +126,14 @@ function CourtForm() {
             value={form.sportId}
             onChange={e => setForm({ ...form, sportId: e.target.value })}
           >
-            <option value="">-- Select sport --</option>
-            {sports.map(s => (
-              <option key={s.sportId} value={s.sportId}>{s.name}</option>
-            ))}
+            <option value="" disabled>-- Select sport --</option>
+            {sports.length === 0 ? (
+              <option value="" disabled>No sports available. Please create a sport first.</option>
+            ) : (
+              sports.map(s => (
+                <option key={s.sportId} value={s.sportId}>{s.name}</option>
+              ))
+            )}
           </select>
         </div>
 
@@ -135,7 +148,13 @@ function CourtForm() {
           </label>
         </div>
 
-        {error && <div className="error-msg">{error}</div>}
+        {errors.length > 0 && (
+          <div className="error-msg">
+            {errors.map((msg, i) => (
+              <div key={i}>{msg}</div>
+            ))}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: '16px' }}>
           <button className="btn-primary" onClick={handleSubmit}>

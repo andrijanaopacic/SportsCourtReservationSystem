@@ -22,8 +22,6 @@ function Navbar() {
   ];
 
   const clientLinks = [
-    { path: '/', label: 'Sports' },
-    { path: '/courts', label: 'Courts' },
     { path: '/timeslots', label: 'Time Slots' },
     { path: '/reservations/create', label: 'Courts' },
     { path: '/confirm-reservation', label: 'Reservation Cart' },
@@ -31,8 +29,6 @@ function Navbar() {
   ];
 
   const guestLinks = [
-    { path: '/', label: 'Sports' },
-    { path: '/courts', label: 'Courts' },
     { path: '/timeslots', label: 'Time Slots' },
   ];
 
