@@ -7,11 +7,16 @@ namespace Reservation.API.Services
     {
         private readonly IDatabase _db;
         private readonly IConnectionMultiplexer _redis;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public CacheService(IConnectionMultiplexer redis)
         {
             _redis = redis;
             _db = redis.GetDatabase();
+            _jsonOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+            };
         }
 
         public async Task<T?> GetAsync<T>(string key)
@@ -20,12 +25,12 @@ namespace Reservation.API.Services
             if (value.IsNullOrEmpty)
                 return default;
 
-            return JsonSerializer.Deserialize<T>(value.ToString()!);
+            return JsonSerializer.Deserialize<T>(value.ToString()!, _jsonOptions);
         }
 
         public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
         {
-            var json = JsonSerializer.Serialize(value);
+            var json = JsonSerializer.Serialize(value, _jsonOptions);
             await _db.StringSetAsync(key, json, expiry ?? TimeSpan.FromMinutes(10));
         }
 
