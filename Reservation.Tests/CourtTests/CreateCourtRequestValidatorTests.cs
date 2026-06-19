@@ -31,10 +31,34 @@ namespace Reservation.Tests
         }
 
         [Fact]
+        public void Name_WhenExceedsMaxLength_ReturnsValidationError()
+        {
+            var request = ValidRequest();
+            request.Name = new string('a', 101);
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.PropertyName == "Name");
+        }
+
+        [Fact]
         public void Location_WhenEmpty_ReturnsValidationError()
         {
             var request = ValidRequest();
             request.Location = "";
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.PropertyName == "Location");
+        }
+
+        [Fact]
+        public void Location_WhenExceedsMaxLength_ReturnsValidationError()
+        {
+            var request = ValidRequest();
+            request.Location = new string('a', 201);
 
             var result = _validator.Validate(request);
 
@@ -88,6 +112,8 @@ namespace Reservation.Tests
 
             Assert.DoesNotContain(result.Errors, e => e.PropertyName == "Description");
         }
+
+        
 
         [Fact]
         public void ValidRequest_PassesValidation()

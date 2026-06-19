@@ -50,6 +50,15 @@ namespace Reservation.Tests.SportTests
             Assert.Contains(result.Errors, e => e.PropertyName == "MaxPlayers");
         }
 
+        [Fact]
+        public void MaxPlayers_WhenExactlyOne_PassesValidation()
+        {
+            var request = new CreateSportRequest { Name = "Tenis", MaxPlayers = 1 };
+            var result = _validator.Validate(request);
+
+            Assert.DoesNotContain(result.Errors, e => e.PropertyName == "MaxPlayers");
+        }
+
 
         [Fact]
         public void ValidRequest_PassesValidation()
@@ -59,6 +68,7 @@ namespace Reservation.Tests.SportTests
 
             Assert.True(result.IsValid);
         }
+
 
     }
 }
