@@ -14,6 +14,7 @@ function TimeSlotsList() {
   const [filterMaxPrice, setFilterMaxPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalMessage, setModalMessage] = useState('');
+  const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
     getCourts({}).then(res => setCourts(res.data)).catch(() => { });
@@ -44,11 +45,17 @@ function TimeSlotsList() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
+    setConfirmId(id);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await deleteTimeSlot(id);
+      await deleteTimeSlot(confirmId);
+      setConfirmId(null);
       fetchSlots();
     } catch (err) {
+      setConfirmId(null);
       setModalMessage(err.response?.data || 'Cannot delete time slot.');
     }
   };
@@ -72,24 +79,31 @@ function TimeSlotsList() {
     return `${m}min`;
   };
 
-  // Group slots by court for display
   const grouped = slots.reduce((acc, slot) => {
-    const key = slot.courtId;
-    if (!acc[key]) acc[key] = { courtName: slot.courtName, slots: [] };
-    acc[key].slots.push(slot);
+    const courtKey = slot.courtId;
+    if (!acc[courtKey]) acc[courtKey] = { courtName: slot.courtName, byDate: {} };
+    const dateKey = slot.date || '—';
+    if (!acc[courtKey].byDate[dateKey]) acc[courtKey].byDate[dateKey] = [];
+    acc[courtKey].byDate[dateKey].push(slot);
     return acc;
   }, {});
 
   return (
     <div className="page">
       <Modal message={modalMessage} onClose={() => setModalMessage('')} />
+      <Modal
+        message={confirmId ? 'Are you sure you want to delete this time slot? This action cannot be undone.' : ''}
+        onClose={() => setConfirmId(null)}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
 
       <div className="page-header">
         <div>
           <div className="page-title">Time Slots</div>
           <div className="page-subtitle">Available playing times by court</div>
         </div>
-        {/* Add button — only shown to Admin */}
         {isAdmin() && (
           <Link to="/timeslots/new">
             <button className="btn-primary">+ Add Time Slot</button>
@@ -100,7 +114,6 @@ function TimeSlotsList() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '36px' }}>
 
-        {/* Court filter */}
         <div className="form-group">
           <label className="form-label">Court</label>
           <select
@@ -116,7 +129,6 @@ function TimeSlotsList() {
           </select>
         </div>
 
-        {/* Availability filter */}
         <div className="form-group">
           <label className="form-label">Availability</label>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -143,9 +155,8 @@ function TimeSlotsList() {
           </div>
         </div>
 
-        {/* Min price filter */}
         <div className="form-group">
-          <label className="form-label">Min Price (RSD)</label>
+          <label className="form-label">Min Price/h (RSD)</label>
           <input
             className="form-input"
             type="number"
@@ -157,9 +168,8 @@ function TimeSlotsList() {
           />
         </div>
 
-        {/* Max price filter */}
         <div className="form-group">
-          <label className="form-label">Max Price (RSD)</label>
+          <label className="form-label">Max Price/h (RSD)</label>
           <input
             className="form-input"
             type="number"
@@ -171,7 +181,6 @@ function TimeSlotsList() {
           />
         </div>
 
-        {/* Reset filters */}
         <button className="btn-ghost" onClick={handleReset} style={{ marginBottom: '2px' }}>
           Reset
         </button>
@@ -191,35 +200,65 @@ function TimeSlotsList() {
           No time slots found.
         </div>
       ) : filterCourtId ? (
-        // Single court selected 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-          {slots.map(slot => (
-            <SlotCard key={slot.timeSlotId} slot={slot} onDelete={handleDelete} formatTime={formatTime} formatDuration={formatDuration} admin={isAdmin()} />
-          ))}
-        </div>
-      ) : (
-        // All courts — grouped by court name
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
-          {Object.entries(grouped).map(([courtId, { courtName, slots: courtSlots }]) => (
-            <div key={courtId}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', fontWeight: 400, color: 'var(--mahogany)' }}>
-                  {courtName}
-                </div>
-                <div style={{ flex: 1, height: '1px', background: 'var(--cream-dark)' }} />
-                <div style={{ fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--sage)' }}>
-                  {courtSlots.length} slot{courtSlots.length !== 1 ? 's' : ''}
-                </div>
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          {Object.entries(
+            slots.reduce((acc, slot) => {
+              const dk = slot.date || '—';
+              if (!acc[dk]) acc[dk] = [];
+              acc[dk].push(slot);
+              return acc;
+            }, {})
+          ).sort(([a], [b]) => a.localeCompare(b)).map(([date, dateSlots]) => (
+            <div key={date}>
+              <DateHeader date={date} count={dateSlots.length} />
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                {courtSlots.map(slot => (
+                {dateSlots.map(slot => (
                   <SlotCard key={slot.timeSlotId} slot={slot} onDelete={handleDelete} formatTime={formatTime} formatDuration={formatDuration} admin={isAdmin()} />
                 ))}
               </div>
             </div>
           ))}
         </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '56px' }}>
+          {Object.entries(grouped).map(([courtId, { courtName, byDate }]) => (
+            <div key={courtId}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', fontWeight: 400, color: 'var(--mahogany)' }}>
+                  {courtName}
+                </div>
+                <div style={{ flex: 1, height: '1px', background: 'var(--cream-dark)' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                {Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b)).map(([date, dateSlots]) => (
+                  <div key={date}>
+                    <DateHeader date={date} count={dateSlots.length} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                      {dateSlots.map(slot => (
+                        <SlotCard key={slot.timeSlotId} slot={slot} onDelete={handleDelete} formatTime={formatTime} formatDuration={formatDuration} admin={isAdmin()} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+    </div>
+  );
+}
+
+function DateHeader({ date, count }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+      <div style={{ fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--bronze)' }}>
+        {date}
+      </div>
+      <div style={{ flex: 1, height: '1px', background: 'var(--cream-dark)' }} />
+      <div style={{ fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--sage)' }}>
+        {count} slot{count !== 1 ? 's' : ''}
+      </div>
     </div>
   );
 }
@@ -233,60 +272,126 @@ function SlotCard({ slot, onDelete, formatTime, formatDuration, admin }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        border: `1px solid ${hovered ? 'var(--bronze)' : slot.isAvailable ? 'var(--cream-dark)' : 'rgba(153,27,27,0.2)'}`,
-        padding: '20px',
-        transition: 'border-color 0.2s, background 0.2s',
+        border: `1px solid ${hovered ? 'var(--bronze)' : slot.isAvailable ? 'var(--cream-dark)' : 'rgba(153,27,27,0.15)'}`,
         background: hovered ? 'var(--cream-dark)' : 'var(--cream)',
-        display: 'flex', flexDirection: 'column', gap: '6px',
-        opacity: slot.isAvailable ? 1 : 0.65,
+        transition: 'all 0.2s',
+        opacity: slot.isAvailable ? 1 : 0.7,
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '26px', fontWeight: 300, color: 'var(--mahogany)', lineHeight: 1 }}>
-        {formatTime(slot.startTime)}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span style={{ width: '16px', height: '1px', background: 'var(--sage)', display: 'inline-block' }} />
-        <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: 'var(--bronze)' }}>
-          {formatTime(slot.endTime)}
+      {/* Top section — time range + status badge */}
+      <div style={{
+        background: slot.isAvailable ? 'var(--mahogany)' : '#6b2a2a',
+        padding: '16px 20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        {/* Time in one row */}
+        <div style={{
+          fontFamily: 'Cormorant Garamond, serif',
+          fontSize: '24px', fontWeight: 300,
+          color: 'var(--cream)', letterSpacing: '0.02em',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          <span>{formatTime(slot.startTime)}</span>
+          <span style={{ color: 'var(--sage)', fontSize: '16px' }}>→</span>
+          <span>{formatTime(slot.endTime)}</span>
+        </div>
+
+        {/* Status badge */}
+        <span style={{
+          fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+          color: slot.isAvailable ? '#a8d5b5' : '#f4a0a0',
+          border: `1px solid ${slot.isAvailable ? '#a8d5b5' : '#f4a0a0'}`,
+          padding: '3px 8px',
+        }}>
+          {slot.isAvailable ? 'Free' : 'Taken'}
         </span>
       </div>
-      {/* Duration */}
-      {duration && (
-        <div style={{ fontSize: '10px', color: 'var(--sage)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '2px' }}>
-          {duration}
-        </div>
-      )}
-      {/* Price */}
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: 'var(--mahogany)', marginTop: '4px' }}>
-        {slot.price?.toLocaleString('sr-RS')} RSD
-      </div>
-      {/* Availability status */}
-      <div style={{
-        fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase',
-        color: slot.isAvailable ? '#4a7c59' : '#991b1b',
-        marginTop: '2px',
-      }}>
-        {slot.isAvailable ? '● Available' : '● Unavailable'}
-      </div>
 
-      {/* Edit and Delete — visible on hover, only for Admin */}
-      {hovered && admin && (
-        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', alignItems: 'center' }}>
-          <Link to={`/timeslots/${slot.timeSlotId}`}>
-            <button className="btn-ghost" style={{ padding: '5px 14px', fontSize: '10px' }}>Edit</button>
-          </Link>
-          <span style={{ color: 'var(--sage)' }}>|</span>
-          <button
-            className="btn-danger"
-            onClick={() => onDelete(slot.timeSlotId)}
-            style={{ fontSize: '10px', letterSpacing: '0.1em' }}
-          >
-            Delete
-          </button>
+      {/* Bottom section — details */}
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+        {/* Duration */}
+        {duration && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{
+              fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: 'var(--bronze)',
+            }}>
+              Duration
+            </span>
+            <span style={{
+              fontFamily: 'Cormorant Garamond, serif', fontSize: '16px',
+              color: 'var(--mahogany)', fontWeight: 400,
+            }}>
+              {duration}
+            </span>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--cream-dark)' }} />
+
+        {/* Price per hour */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{
+            fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--bronze)',
+          }}>
+            Price / h
+          </span>
+          <span style={{
+            fontFamily: 'Cormorant Garamond, serif', fontSize: '16px',
+            color: 'var(--mahogany)',
+          }}>
+            {slot.price?.toLocaleString('sr-RS')} RSD
+          </span>
         </div>
-      )}
+
+        {/* Total price — highlighted */}
+        {slot.totalPrice != null && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'var(--cream-dark)', padding: '8px 12px', marginTop: '2px',
+          }}>
+            <span style={{
+              fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: 'var(--mahogany)', fontWeight: 500,
+            }}>
+              Total
+            </span>
+            <span style={{
+              fontFamily: 'Cormorant Garamond, serif', fontSize: '20px',
+              color: 'var(--mahogany)', fontWeight: 600,
+            }}>
+              {slot.totalPrice?.toLocaleString('sr-RS')} RSD
+            </span>
+          </div>
+        )}
+
+        {/* Edit / Delete buttons */}
+        {hovered && admin && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', alignItems: 'center' }}>
+            <Link to={`/timeslots/${slot.timeSlotId}`} style={{ flex: 1 }}>
+              <button className="btn-ghost" style={{ padding: '5px 0', fontSize: '10px', width: '100%' }}>
+                Edit
+              </button>
+            </Link>
+            <button
+              className="btn-danger"
+              onClick={() => onDelete(slot.timeSlotId)}
+              style={{ flex: 1, padding: '5px 0', fontSize: '10px', letterSpacing: '0.1em' }}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
+
 
 export default TimeSlotsList;

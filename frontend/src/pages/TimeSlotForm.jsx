@@ -4,8 +4,7 @@ import { getCourts, createTimeSlot, updateTimeSlot, getTimeSlotById } from '../s
 
 function TimePicker({ label, value, onChange }) {
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-  const minutes = ['00', '15', '30', '45'];
-  const [hh, mm] = value ? value.split(':') : ['08', '00'];
+  const hh = value ? value.split(':')[0] : '08';
 
   return (
     <div className="form-group">
@@ -14,7 +13,7 @@ function TimePicker({ label, value, onChange }) {
         {/* Hour selector */}
         <select
           value={hh}
-          onChange={e => onChange(`${e.target.value}:${mm}`)}
+          onChange={e => onChange(`${e.target.value}:00`)}
           style={{
             background: 'transparent', border: 'none', outline: 'none',
             fontFamily: 'Cormorant Garamond, serif', fontSize: '32px',
@@ -24,35 +23,34 @@ function TimePicker({ label, value, onChange }) {
         >
           {hours.map(h => <option key={h} value={h}>{h}</option>)}
         </select>
-        <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '32px', color: 'var(--bronze)', lineHeight: 1, userSelect: 'none', margin: '0 2px' }}>:</span>
-        {/* Minute selector */}
-        <select
-          value={mm}
-          onChange={e => onChange(`${hh}:${e.target.value}`)}
-          style={{
-            background: 'transparent', border: 'none', outline: 'none',
-            fontFamily: 'Cormorant Garamond, serif', fontSize: '32px',
-            fontWeight: 300, color: 'var(--mahogany)',
-            cursor: 'pointer', appearance: 'none', width: '52px',
-          }}
-        >
-          {minutes.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <span style={{
+          fontFamily: 'Cormorant Garamond, serif', fontSize: '32px',
+          color: 'var(--bronze)', lineHeight: 1, userSelect: 'none', margin: '0 2px',
+        }}>:</span>
+        {/* Minutes */}
+        <span style={{
+          fontFamily: 'Cormorant Garamond, serif', fontSize: '32px',
+          fontWeight: 300, color: 'var(--mahogany)', width: '52px',
+          userSelect: 'none',
+        }}>00</span>
       </div>
-      {/* Quick-select buttons for common hours */}
+      {/* Quick-select buttons for common full hours */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
-        {['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'].map(t => (
-          <button key={t} type="button" onClick={() => onChange(t)} style={{
-            background: value === t ? 'var(--mahogany)' : 'transparent',
-            color: value === t ? 'var(--cream)' : 'var(--bronze)',
-            border: '1px solid var(--bronze)',
-            padding: '4px 10px', fontSize: '10px',
-            letterSpacing: '0.08em', cursor: 'pointer',
-            transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
-          }}>
-            {t}
-          </button>
-        ))}
+        {['06', '08', '10', '12', '14', '16', '18', '20', '22'].map(h => {
+          const t = `${h}:00`;
+          return (
+            <button key={h} type="button" onClick={() => onChange(t)} style={{
+              background: value === t ? 'var(--mahogany)' : 'transparent',
+              color: value === t ? 'var(--cream)' : 'var(--bronze)',
+              border: '1px solid var(--bronze)',
+              padding: '4px 10px', fontSize: '10px',
+              letterSpacing: '0.08em', cursor: 'pointer',
+              transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
+            }}>
+              {t}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -67,6 +65,7 @@ function TimeSlotForm() {
   const [courts, setCourts] = useState([]);
   const [form, setForm] = useState({
     courtId: '',
+    date: '',
     startTime: '08:00',
     endTime: '10:00',
     price: '',
@@ -83,6 +82,7 @@ function TimeSlotForm() {
       getTimeSlotById(id).then(res => {
         setForm({
           courtId: String(res.data.courtId),
+          date: res.data.date,
           startTime: res.data.startTime.slice(0, 5),
           endTime: res.data.endTime.slice(0, 5),
           price: String(res.data.price),
@@ -94,19 +94,28 @@ function TimeSlotForm() {
 
   const previewDuration = () => {
     if (!form.startTime || !form.endTime) return null;
-    const [sh, sm] = form.startTime.split(':').map(Number);
-    const [eh, em] = form.endTime.split(':').map(Number);
-    const totalMin = (eh * 60 + em) - (sh * 60 + sm);
-    if (totalMin <= 0) return null;
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    return h > 0 ? `${h}h ${m > 0 ? m + 'min' : ''}`.trim() : `${m}min`;
+    const sh = parseInt(form.startTime.split(':')[0]);
+    const eh = parseInt(form.endTime.split(':')[0]);
+    const hours = eh - sh;
+    if (hours <= 0) return null;
+    return `${hours}h`;
+  };
+
+  const previewTotalPrice = () => {
+    const p = parseFloat(form.price);
+    if (!p || isNaN(p)) return null;
+    const sh = parseInt(form.startTime.split(':')[0]);
+    const eh = parseInt(form.endTime.split(':')[0]);
+    const hours = eh - sh;
+    if (hours <= 0) return null;
+    return (p * hours).toLocaleString('sr-RS');
   };
 
   const handleSubmit = async () => {
     try {
       const data = {
         courtId: parseInt(form.courtId),
+        date: form.date,
         startTime: form.startTime + ':00',
         endTime: form.endTime + ':00',
         price: parseFloat(form.price),
@@ -130,6 +139,7 @@ function TimeSlotForm() {
 
   const selectedCourt = courts.find(c => c.courtId === parseInt(form.courtId));
   const duration = previewDuration();
+  const totalPrice = previewTotalPrice();
 
   return (
     <div className="page">
@@ -158,13 +168,25 @@ function TimeSlotForm() {
           </select>
         </div>
 
+        {/* Date picker */}
+        <div className="form-group">
+          <label className="form-label">Date</label>
+          <input
+            className="form-input"
+            type="date"
+            value={form.date}
+            onChange={e => setForm({ ...form, date: e.target.value })}
+            style={{ fontFamily: 'Inter, sans-serif', fontSize: '15px' }}
+          />
+        </div>
+
         {/* Start and end time pickers */}
         <TimePicker label="Start Time" value={form.startTime} onChange={v => setForm({ ...form, startTime: v })} />
         <TimePicker label="End Time" value={form.endTime} onChange={v => setForm({ ...form, endTime: v })} />
 
-        {/* Price input */}
+        {/* Price per hour input */}
         <div className="form-group">
-          <label className="form-label">Price (RSD)</label>
+          <label className="form-label">Price per hour (RSD)</label>
           <input
             className="form-input"
             type="number"
@@ -200,7 +222,7 @@ function TimeSlotForm() {
           </div>
         </div>
 
-        {/* Preview section — shown only when a court is selected */}
+        {/* Preview — shown when court is selected */}
         {selectedCourt && (
           <div style={{ borderTop: '1px solid var(--cream-dark)', borderBottom: '1px solid var(--cream-dark)', padding: '20px 0' }}>
             <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--bronze)', marginBottom: '12px' }}>
@@ -210,6 +232,14 @@ function TimeSlotForm() {
               <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: 'var(--mahogany)' }}>
                 {selectedCourt.name}
               </span>
+              {form.date && (
+                <>
+                  <span style={{ color: 'var(--sage)' }}>·</span>
+                  <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '18px', color: 'var(--mahogany)' }}>
+                    {form.date}
+                  </span>
+                </>
+              )}
               <span style={{ color: 'var(--sage)' }}>·</span>
               <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: 'var(--mahogany)' }}>
                 {form.startTime} — {form.endTime}
@@ -222,15 +252,19 @@ function TimeSlotForm() {
                   </span>
                 </>
               )}
-              {form.price && (
-                <>
-                  <span style={{ color: 'var(--sage)' }}>·</span>
-                  <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', color: 'var(--bronze)' }}>
-                    {form.price} RSD
-                  </span>
-                </>
-              )}
             </div>
+            {/* Price breakdown */}
+            {form.price && duration && (
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: 'var(--sage)' }}>
+                  {parseFloat(form.price).toLocaleString('sr-RS')} RSD/h × {duration}
+                </span>
+                <span style={{ color: 'var(--sage)' }}>=</span>
+                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '22px', color: 'var(--bronze)' }}>
+                  {totalPrice} RSD
+                </span>
+              </div>
+            )}
             <div style={{ marginTop: '8px' }}>
               <span style={{
                 fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase',

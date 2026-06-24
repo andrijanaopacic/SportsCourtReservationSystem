@@ -1,4 +1,4 @@
-function Modal({ message, onClose }) {
+function Modal({ message, onClose, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel' }) {
   if (!message) return null;
 
   return (
@@ -10,7 +10,7 @@ function Modal({ message, onClose }) {
       <div style={{
         background: 'var(--cream)', padding: '48px',
         maxWidth: '420px', width: '90%',
-        borderTop: '2px solid var(--bronze)'
+        borderTop: `2px solid ${onConfirm ? '#991b1b' : 'var(--bronze)'}`,
       }}>
         <p style={{
           fontFamily: 'Cormorant Garamond, serif',
@@ -20,7 +20,34 @@ function Modal({ message, onClose }) {
         }}>
           {message}
         </p>
-        <button className="btn-primary" onClick={onClose}>Close</button>
+
+        {onConfirm ? (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              className="btn-primary"
+              onClick={onClose}
+              style={{ flex: 1 }}
+            >
+              {cancelText}
+            </button>
+            <button
+              onClick={onConfirm}
+              style={{
+                flex: 1, background: '#991b1b', color: 'var(--cream)',
+                border: 'none', padding: '12px 28px',
+                fontFamily: 'Inter, sans-serif', fontSize: '11px',
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                cursor: 'pointer', transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => e.target.style.background = '#7f1d1d'}
+              onMouseLeave={e => e.target.style.background = '#991b1b'}
+            >
+              {confirmText}
+            </button>
+          </div>
+        ) : (
+          <button className="btn-primary" onClick={onClose}>Close</button>
+        )}
       </div>
     </div>
   );

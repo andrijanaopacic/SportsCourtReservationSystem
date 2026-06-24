@@ -54,17 +54,22 @@ namespace Infrastructure
             modelBuilder.Entity<TimeSlot>(entity =>
             {
                 entity.HasKey(t => t.TimeSlotId);
+                entity.Property(t => t.Date).IsRequired();      
                 entity.Property(t => t.StartTime).IsRequired();
                 entity.Property(t => t.EndTime).IsRequired();
 
                 entity.HasOne(t => t.Court)
-                      .WithMany(c => c.TimeSlots)  
+                      .WithMany(c => c.TimeSlots)
                       .HasForeignKey(t => t.CourtId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<TimeSlot>()
                 .Property(t => t.Price)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<TimeSlot>()        
+                .Property(t => t.TotalPrice)
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<ReservationEntity>(entity =>

@@ -22,14 +22,12 @@ function Navbar() {
   ];
 
   const clientLinks = [
-    { path: '/timeslots', label: 'Time Slots' },
     { path: '/reservations/create', label: 'Courts' },
     { path: '/confirm-reservation', label: 'Reservation Cart' },
     { path: '/reservations', label: 'My Reservations' },
   ];
 
   const guestLinks = [
-    { path: '/timeslots', label: 'Time Slots' },
   ];
 
   const links = !user ? guestLinks : isAdmin() ? adminLinks : clientLinks;

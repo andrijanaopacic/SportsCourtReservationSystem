@@ -33,11 +33,6 @@ function App() {
 
         <Routes>
           {/* PUBLIC */}
-
-          <Route path="/timeslots" element={<TimeSlotsList />} />
-          <Route path="/timeslots/new" element={<TimeSlotForm />} />
-          <Route path="/timeslots/:id" element={<TimeSlotForm />} />
-
           <Route path="/courts/:courtId/calendar" element={<CourtCalendar />} />
 
           <Route path="/login" element={<LoginPage />} />
@@ -62,7 +57,7 @@ function App() {
             <ProtectedRoute role="admin"><AdminReservations /></ProtectedRoute>
           } />
           <Route path="/" element={
-          <ProtectedRoute role="admin"><SportsList /></ProtectedRoute>
+            <ProtectedRoute role="admin"><SportsList /></ProtectedRoute>
           } />
           <Route path="/sports/new" element={
             <ProtectedRoute role="admin"><SportForm /></ProtectedRoute>
@@ -79,6 +74,16 @@ function App() {
           } />
           <Route path="/courts/:id" element={
             <ProtectedRoute role="admin"><CourtForm /></ProtectedRoute>
+          } />
+
+          <Route path="/timeslots" element={
+            <ProtectedRoute role="admin"><TimeSlotsList /></ProtectedRoute>
+          } />
+          <Route path="/timeslots/new" element={
+            <ProtectedRoute role="admin"><TimeSlotForm /></ProtectedRoute>
+          } />
+          <Route path="/timeslots/:id" element={
+            <ProtectedRoute role="admin"><TimeSlotForm /></ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>

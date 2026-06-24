@@ -32,13 +32,21 @@ namespace Reservation.API.Controllers
             _cache = cache;
         }
 
+        private static decimal ComputeTotalPrice(decimal price, TimeOnly start, TimeOnly end)
+        {
+            var hours = (decimal)(end - start).TotalHours;
+            return hours > 0 ? price * hours : 0;
+        }
+
         private static TimeSlotDto MapToDto(TimeSlot t, string courtName) => new()
         {
             TimeSlotId = t.TimeSlotId,
+            Date = t.Date,
             StartTime = t.StartTime,
             EndTime = t.EndTime,
             Duration = t.Duration,
             Price = t.Price,
+            TotalPrice = t.TotalPrice,
             IsAvailable = t.IsAvailable,
             CourtId = t.CourtId,
             CourtName = courtName
@@ -135,17 +143,21 @@ namespace Reservation.API.Controllers
             if (court == null) return NotFound($"Court with ID {request.CourtId} was not found.");
 
             var overlapping = _uow.TimeSlots.GetByCourt(request.CourtId)
-                .Any(t => t.StartTime < request.EndTime && t.EndTime > request.StartTime);
+                .Any(t => t.Date == request.Date &&
+                          t.StartTime < request.EndTime &&
+                          t.EndTime > request.StartTime);
 
             if (overlapping)
-                return BadRequest("An overlapping time slot already exists on this court.");
+                return BadRequest("An overlapping time slot already exists on this court for that date.");
 
             var slot = new TimeSlot
             {
+                Date = request.Date,
                 StartTime = request.StartTime,
                 EndTime = request.EndTime,
                 Duration = request.EndTime - request.StartTime,
                 Price = request.Price,
+                TotalPrice = ComputeTotalPrice(request.Price, request.StartTime, request.EndTime),
                 IsAvailable = request.IsAvailable,
                 CourtId = request.CourtId
             };
@@ -178,18 +190,21 @@ namespace Reservation.API.Controllers
 
             var overlapping = _uow.TimeSlots.GetByCourt(request.CourtId)
                 .Any(t => t.TimeSlotId != id &&
+                          t.Date == request.Date &&
                           t.StartTime < request.EndTime &&
                           t.EndTime > request.StartTime);
 
             if (overlapping)
-                return BadRequest("An overlapping time slot already exists on this court.");
+                return BadRequest("An overlapping time slot already exists on this court for that date.");
 
             var oldCourtId = slot.CourtId;
 
+            slot.Date = request.Date;
             slot.StartTime = request.StartTime;
             slot.EndTime = request.EndTime;
             slot.Duration = request.EndTime - request.StartTime;
             slot.Price = request.Price;
+            slot.TotalPrice = ComputeTotalPrice(request.Price, request.StartTime, request.EndTime);
             slot.IsAvailable = request.IsAvailable;
             slot.CourtId = request.CourtId;
 
