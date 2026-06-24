@@ -28,7 +28,7 @@ namespace Infrastructure
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            /*
+            
             modelBuilder.Entity<Sport>(entity =>
             {
                 entity.HasKey(s => s.SportId);
@@ -70,7 +70,7 @@ namespace Infrastructure
 
             modelBuilder.Entity<TimeSlot>()        
                 .Property(t => t.TotalPrice)
-                .HasPrecision(18, 2);*/
+                .HasPrecision(18, 2);
 
             modelBuilder.Entity<ReservationEntity>(entity =>
             {
