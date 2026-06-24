@@ -28,10 +28,13 @@ export const updateCourt = (id, data) => api.put(`/courts/${id}`, data);
 export const deleteCourt = (id) => api.delete(`/courts/${id}`);
 export const getCourtsBySport = (sportId) => api.get(`/courts/by-sport/${sportId}`);
 
-// TimeSlots
+// TimeSlots — date param je opcionalan; ako se prosledi, bek filtrira isAvailable po datumu
 export const getTimeSlots = (params) => api.get('/timeslots', { params });
 export const getTimeSlotById = (id) => api.get(`/timeslots/${id}`);
-export const getTimeSlotsByCourt = (courtId) => api.get(`/timeslots/by-court/${courtId}`);
+export const getTimeSlotsByCourt = (courtId, date) =>
+    api.get(`/timeslots/by-court/${courtId}`, {
+        params: date ? { date } : {}
+    });
 export const createTimeSlot = (data) => api.post('/timeslots', data);
 export const updateTimeSlot = (id, data) => api.put(`/timeslots/${id}`, data);
 export const deleteTimeSlot = (id) => api.delete(`/timeslots/${id}`);
@@ -52,7 +55,12 @@ export const getCourtReservations = (courtId, date) =>
     api.get(`/reservations/court/${courtId}`, {
         params: { date }
     });
-//export const getCourtCalendar = (courtId, year, month) =>
-    //api.get(`/reservations/court/${courtId}/calendar`, {
-     //   params: { year, month }
-   // });
+export const getCourtCalendar = (courtId, year, month) =>
+    api.get(`/reservations/court/${courtId}/calendar`, {
+        params: { year, month }
+    });
+export const getTimeSlotsByCourtReservations = (courtId, dateStr) => {
+    return api.get(`/reservations/court/${courtId}/slots`, {
+        params: { date: dateStr }
+    });
+};

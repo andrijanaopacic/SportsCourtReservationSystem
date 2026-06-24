@@ -6,7 +6,6 @@ import {
   updateReservation,
   getCourts,
   getTimeSlotsByCourt,
-  getCourtReservations,
 } from '../services/api';
 import Modal from '../components/Modal';
 
@@ -20,7 +19,6 @@ function AddItemWizard({ onAdd, onCancel }) {
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [slots, setSlots] = useState([]);
-  const [takenSlotIds, setTakenSlotIds] = useState(new Set());
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Učitaj terene
@@ -28,30 +26,19 @@ function AddItemWizard({ onAdd, onCancel }) {
     getCourts().then(r => setCourts(r.data)).catch(() => {});
   }, []);
 
-  // Kad se odabere teren + datum, učitaj termine i rezervacije
+  // Kad se odabere teren + datum, učitaj termine sa isAvailable po datumu sa beka
   useEffect(() => {
     if (!selectedCourt) return;
     setLoadingSlots(true);
-    Promise.all([
-      getTimeSlotsByCourt(selectedCourt.courtId),
-      getCourtReservations(selectedCourt.courtId, { startDate: selectedDate, endDate: selectedDate }),
-    ])
-      .then(([slotsRes, resRes]) => {
-        setSlots(slotsRes.data);
-        const taken = new Set(
-          resRes.data
-            .flatMap(r => r.items || [])
-            .filter(i => String(i.date).substring(0, 10) === selectedDate)
-            .map(i => i.timeSlotId)
-        );
-        setTakenSlotIds(taken);
-      })
+    getTimeSlotsByCourt(selectedCourt.courtId, selectedDate)
+      .then(res => setSlots(res.data))
       .catch(() => {})
       .finally(() => setLoadingSlots(false));
   }, [selectedCourt, selectedDate]);
 
   const handleSlotClick = (slot) => {
-    if (takenSlotIds.has(slot.timeSlotId)) return;
+    // isAvailable dolazi sa beka — nema lokalne Set logike
+    if (!slot.isAvailable) return;
     onAdd({ timeSlotId: slot.timeSlotId, date: selectedDate });
   };
 
@@ -97,7 +84,7 @@ function AddItemWizard({ onAdd, onCancel }) {
         </div>
       )}
 
-      {/* Termini */}
+      {/* Termini — isAvailable dolazi sa beka, nema lokalnog filtriranja */}
       {selectedCourt && (
         <div>
           <div style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bronze)', marginBottom: '10px' }}>
@@ -110,7 +97,7 @@ function AddItemWizard({ onAdd, onCancel }) {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
               {slots.map(slot => {
-                const taken = takenSlotIds.has(slot.timeSlotId);
+                const taken = !slot.isAvailable;
                 return (
                   <div
                     key={slot.timeSlotId}
@@ -205,7 +192,6 @@ function ReservationsList() {
       const res = await getReservationById(id);
       setSelectedReservation(res.data);
       setEditStatus(res.data.status);
-      // Čuvamo ceo objekat kako ne bismo izgubili courtName, startTime i endTime u Edit modu
       setEditItems(res.data.items.map(i => ({ ...i })));
     } catch {
       setModalMessage('Failed to load reservation details.');
@@ -217,7 +203,6 @@ function ReservationsList() {
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      // Šaljemo samo ono što bek očekuje za update, ali čuvamo strukturu
       const payloadItems = editItems.map(i => ({ timeSlotId: i.timeSlotId, date: i.date }));
       const res = await updateReservation(selectedReservation.reservationId, {
         status: editStatus,

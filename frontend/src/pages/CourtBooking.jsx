@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   getCourtById,
-  getCourtReservations,
   getCourtCalendar,
-  getTimeSlotsByCourt
+  getTimeSlotsByCourtReservations
 } from '../services/api';
 
 function CourtBooking() {
@@ -14,7 +13,6 @@ function CourtBooking() {
   const [court, setCourt] = useState(null);
   const [timeSlots, setTimeSlots] = useState([]);
   const [calendar, setCalendar] = useState([]);
-  const [reservations, setReservations] = useState([]); // Rezervacije sa beka za izabrani dan
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlots, setSelectedSlots] = useState([]);
@@ -22,6 +20,7 @@ function CourtBooking() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const [loading, setLoading] = useState(true);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const formatDate = (d) => {
@@ -31,20 +30,16 @@ function CourtBooking() {
     return `${year}-${month}-${day}`;
   };
 
-  // Inicijalno učitavanje svih podataka sa servera
+  // Inicijalno učitavanje: podaci o terenu i kalendar za trenutni mesec
   const loadInitialData = async () => {
     setLoading(true);
     setError('');
-
     try {
-      const [courtRes, slotsRes, calendarRes] = await Promise.all([
+      const [courtRes, calendarRes] = await Promise.all([
         getCourtById(courtId),
-        getTimeSlotsByCourt(courtId),
         getCourtCalendar(courtId, currentDate.getFullYear(), currentDate.getMonth() + 1)
       ]);
-
       setCourt(courtRes.data);
-      setTimeSlots(slotsRes.data);
       setCalendar(calendarRes.data);
     } catch (err) {
       console.error(err);
@@ -55,13 +50,16 @@ function CourtBooking() {
     }
   };
 
-  // Učitavanje rezervacija za specifičan izabrani dan
-  const loadReservationsForDate = useCallback(async (dateStr) => {
+  // Učitavanje termina za izabrani datum — bek vraća isAvailable po datumu
+  const loadSlotsForDate = useCallback(async (dateStr) => {
+    setSlotsLoading(true);
     try {
-      const res = await getCourtReservations(courtId, dateStr);
-      setReservations(res.data); // Pamti niz rezervacija (svaka ima svoj 'items' niz)
+      const res = await getTimeSlotsByCourtReservations(courtId, dateStr);
+      setTimeSlots(res.data);
     } catch (err) {
-      console.error('Failed to load reservations for selected date', err);
+      console.error('Failed to load time slots for selected date', err);
+    } finally {
+      setSlotsLoading(false);
     }
   }, [courtId]);
 
@@ -71,25 +69,11 @@ function CourtBooking() {
 
   useEffect(() => {
     setSelectedSlots([]);
+    setTimeSlots([]);
     if (selectedDate) {
-      loadReservationsForDate(selectedDate);
-    } else {
-      setReservations([]);
+      loadSlotsForDate(selectedDate);
     }
-  }, [selectedDate, loadReservationsForDate]);
-
-  // POPRAVKA: Duboka provera da li je slot zauzet prokopavanjem kroz res.items strukturu sa beka
-  const checkIsUnavailable = (slot) => {
-    // 1. Ako je sam slot na beku eksplicitno obeležen kao isAvailable: false
-    if (!slot.isAvailable) return true;
-
-    // 2. Prolazimo kroz sve rezervacije i gledamo da li bilo koji 'item' sadrži naš timeSlotId
-    const isBookedByReservation = reservations.some(res =>
-      res.items && res.items.some(item => Number(item.timeSlotId) === Number(slot.timeSlotId))
-    );
-
-    return isBookedByReservation;
-  };
+  }, [selectedDate, loadSlotsForDate]);
 
   const toggleSlot = (id) => {
     setSelectedSlots(prev =>
@@ -102,6 +86,7 @@ function CourtBooking() {
   const getDayInfo = (dateStr) =>
     calendar.find(x => x.date === dateStr);
 
+  // Ukupna cena — sabira se lokalno samo za UX prikaz pre slanja na bek
   const totalPrice = selectedSlots.reduce((sum, id) => {
     const slot = timeSlots.find(s => s.timeSlotId === id);
     return sum + (slot?.totalPrice || 0);
@@ -120,6 +105,7 @@ function CourtBooking() {
   ).getDay();
 
   const changeMonth = (offset) => {
+    setSelectedDate(null);
     setCurrentDate(
       new Date(
         currentDate.getFullYear(),
@@ -128,9 +114,6 @@ function CourtBooking() {
       )
     );
   };
-
-  // Filtriramo bazične definisane slotove koji pripadaju izabranom datumu
-  const filteredTimeSlots = timeSlots.filter(slot => slot.date === selectedDate);
 
   if (loading && !court) {
     return <div className="page">Loading...</div>;
@@ -228,46 +211,53 @@ function CourtBooking() {
         <div className="card">
           <h3>Slots for {selectedDate}</h3>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 10
-          }}>
-            {filteredTimeSlots.length === 0 ? (
-              <p>Nema definisanih termina za ovaj dan.</p>
-            ) : (
-              filteredTimeSlots.map(slot => {
-                const selected = selectedSlots.includes(slot.timeSlotId);
-                
-                // OVDE POZIVAMO POPRAVLJENU PROVERU
-                const isUnavailable = checkIsUnavailable(slot); 
+          {slotsLoading ? (
+            <p>Loading slots...</p>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: 10
+            }}>
+              {timeSlots.length === 0 ? (
+                <p>Nema definisanih termina za ovaj dan.</p>
+              ) : (
+                timeSlots.map(slot => {
+                  const selected = selectedSlots.includes(slot.timeSlotId);
+                  // isAvailable dolazi direktno sa beka — nema duple provere na frontu
+                  const isUnavailable = !slot.isAvailable;
 
-                return (
-                  <div
-                    key={slot.timeSlotId}
-                    onClick={() => !isUnavailable && toggleSlot(slot.timeSlotId)}
-                    style={{
-                      padding: 16,
-                      borderRadius: 10,
-                      cursor: isUnavailable ? 'not-allowed' : 'pointer',
-                      background: isUnavailable 
-                        ? '#757575' 
-                        : selected 
-                        ? '#1565c0' 
-                        : '#2e7d32',
-                      color: '#fff',
-                      textAlign: 'center',
-                      opacity: isUnavailable ? 0.6 : 1
-                    }}
-                  >
-                    {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                    <div>{slot.totalPrice} RSD</div>
-                    {isUnavailable && <div style={{ fontSize: 11, fontWeight: 'bold', marginTop: 4 }}>ZAUZETO</div>}
-                  </div>
-                );
-              })
-            )}
-          </div>
+                  return (
+                    <div
+                      key={slot.timeSlotId}
+                      onClick={() => !isUnavailable && toggleSlot(slot.timeSlotId)}
+                      style={{
+                        padding: 16,
+                        borderRadius: 10,
+                        cursor: isUnavailable ? 'not-allowed' : 'pointer',
+                        background: isUnavailable
+                          ? '#757575'
+                          : selected
+                          ? '#1565c0'
+                          : '#2e7d32',
+                        color: '#fff',
+                        textAlign: 'center',
+                        opacity: isUnavailable ? 0.6 : 1
+                      }}
+                    >
+                      {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                      <div>{slot.totalPrice} RSD</div>
+                      {isUnavailable && (
+                        <div style={{ fontSize: 11, fontWeight: 'bold', marginTop: 4 }}>
+                          ZAUZETO
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {selectedSlots.length > 0 && (
             <div style={{ marginTop: 20 }}>
@@ -276,11 +266,8 @@ function CourtBooking() {
               <button
                 className="btn-primary"
                 onClick={() => {
-                  const cart = JSON.parse(localStorage.getItem('reservationCart')) || [];
-
                   const items = selectedSlots.map(id => {
                     const slot = timeSlots.find(s => s.timeSlotId === id);
-
                     return {
                       courtId: Number(courtId),
                       courtName: court.name,
@@ -292,12 +279,8 @@ function CourtBooking() {
                     };
                   });
 
-                  localStorage.setItem(
-                    'reservationCart',
-                    JSON.stringify([...cart, ...items])
-                  );
-
-                  navigate('/confirm-reservation');
+                  // Korpa se prosleđuje kroz router state — bez localStorage
+                  navigate('/confirm-reservation', { state: { items } });
                 }}
               >
                 Continue
