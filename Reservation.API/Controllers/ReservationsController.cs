@@ -246,7 +246,6 @@ namespace Reservation.API.Controllers
             var today = DateOnly.FromDateTime(DateTime.Today);
             reservation.Date = today;
 
-            // ── Diff stavki ──────────────────────────────────────────────
             var existingItems = reservation.ReservationItems.ToList();
 
             var requestedKeys = request.Items
@@ -265,7 +264,7 @@ namespace Reservation.API.Controllers
                 .Where(i => !existingKeys.Contains(i.TimeSlotId))
                 .ToList();
 
-            // Konflikt check samo za nove stavke
+            // Konflikt check 
             foreach (var item in toAdd)
             {
                 var conflict = _uow.Reservations.GetAll()
@@ -403,6 +402,17 @@ namespace Reservation.API.Controllers
                 .ToList();
 
             return Ok(grouped);
+        }
+
+        // GET /api/reservations/court/{courtId}/slots?date=2026-06-29
+        [HttpGet("court/{courtId}/slots")]
+        public IActionResult GetSlotsByCourtAndDate(int courtId, [FromQuery] DateOnly date)
+        {
+            var slots = _uow.TimeSlots.GetAll()
+                .Where(s => s.CourtId == courtId && s.Date == date)
+                .ToList();
+
+            return Ok(slots);
         }
     }
 }
