@@ -10,21 +10,14 @@ function ConfirmReservation() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const cart =
-            JSON.parse(localStorage.getItem('reservationCart')) || [];
-
+        const cart = JSON.parse(localStorage.getItem('reservationCart')) || [];
         setItems(cart);
     }, []);
 
     const removeItem = (index) => {
         const updated = items.filter((_, i) => i !== index);
-
         setItems(updated);
-
-        localStorage.setItem(
-            'reservationCart',
-            JSON.stringify(updated)
-        );
+        localStorage.setItem('reservationCart', JSON.stringify(updated));
     };
 
     const handleConfirm = async () => {
@@ -34,28 +27,40 @@ function ConfirmReservation() {
             setSaving(true);
             setError('');
 
+            // Šaljemo u formatu koji CreateReservationRequest na beku očekuje
             await createReservation({
                 items: items.map(item => ({
-                    timeSlotId: item.timeSlotId,
-                    date: item.date
+                    timeSlotId: item.timeSlotId
                 }))
             });
 
             localStorage.removeItem('reservationCart');
-
             navigate('/reservations');
         } catch (err) {
-            setError(
-                err.response?.data ||
-                'Failed to create reservation.'
-            );
+            console.error(err);
+            
+            // Sređivanje error handling-a na osnovu odgovora sa kontrolera
+            const responseData = err.response?.data;
+            
+            if (Array.isArray(responseData)) {
+                // Ako je FluentValidation bacio niz validation grešaka
+                const validationMessages = responseData
+                    .map(e => `${e.propertyName}: ${e.errorMessage}`)
+                    .join(', ');
+                setError(validationMessages);
+            } else if (typeof responseData === 'string') {
+                // Ako je bek vratio custom string (npr. "Termin X je već rezervisan.")
+                setError(responseData);
+            } else {
+                setError(responseData?.message || 'Uspostavljanje rezervacije nije uspelo.');
+            }
         } finally {
             setSaving(false);
         }
     };
 
     const totalPrice = items.reduce(
-        (sum, item) => sum + item.price,
+        (sum, item) => sum + (item.price || 0),
         0
     );
 
@@ -99,23 +104,15 @@ function ConfirmReservation() {
                             {items.map((item, index) => (
                                 <tr key={index}>
                                     <td>{item.courtName}</td>
-
                                     <td>{item.date}</td>
-
                                     <td>
                                         {item.startTime} - {item.endTime}
                                     </td>
-
-                                    <td>
-                                        {item.price} RSD
-                                    </td>
-
+                                    <td>{item.price} RSD</td>
                                     <td>
                                         <button
                                             className="btn-danger"
-                                            onClick={() =>
-                                                removeItem(index)
-                                            }
+                                            onClick={() => removeItem(index)}
                                         >
                                             Remove
                                         </button>
@@ -125,36 +122,21 @@ function ConfirmReservation() {
                         </tbody>
                     </table>
 
-                    <div
-                        className="card"
-                        style={{ marginTop: '24px' }}
-                    >
-                        <h3>
-                            Total: {totalPrice} RSD
-                        </h3>
+                    <div className="card" style={{ marginTop: 24 }}>
+                        <h3>Total: {totalPrice} RSD</h3>
 
-                        <div
-                            style={{
-                                display: 'flex',
-                                gap: '12px',
-                                marginTop: '16px'
-                            }}
-                        >
+                        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
                             <button
                                 className="btn-primary"
                                 onClick={handleConfirm}
                                 disabled={saving}
                             >
-                                {saving
-                                    ? 'Creating...'
-                                    : 'Confirm Reservation'}
+                                {saving ? 'Creating...' : 'Confirm Reservation'}
                             </button>
 
                             <button
                                 className="btn-ghost"
-                                onClick={() =>
-                                    navigate('/reservations/create')
-                                }
+                                onClick={() => navigate('/reservations/create')}
                             >
                                 Continue Selecting
                             </button>

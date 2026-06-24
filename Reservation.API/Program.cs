@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Reservation.API.DTOs.Reservation;
 using Reservation.API.Services;
+using Reservation.API.Validators.Reservation;
 using Reservation.Domain.Repositories;
 using Reservation.Infrastructure.Identity;
 using Scalar.AspNetCore;
@@ -62,6 +64,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
 
 var app = builder.Build();
 

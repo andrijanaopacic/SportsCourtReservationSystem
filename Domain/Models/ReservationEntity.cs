@@ -10,6 +10,7 @@ namespace Reservation.Domain.Models
         public ReservationStatus Status { get; set; }
         public decimal TotalPrice { get; set; }
 
+        public DateOnly Date { get; set; }
         public List<ReservationItem> ReservationItems { get; set; } = new();
 
         public string ApplicationUserId { get; set; } = string.Empty;

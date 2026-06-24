@@ -18,7 +18,6 @@ import TimeSlotForm from './pages/TimeSlotForm';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
-import CourtCalendar from './pages/CourtCalendar';
 import CourtBooking from './pages/CourtBooking';
 
 import ConfirmReservation from './pages/ConfirmReservation';
@@ -33,8 +32,7 @@ function App() {
 
         <Routes>
           {/* PUBLIC */}
-          <Route path="/courts/:courtId/calendar" element={<CourtCalendar />} />
-
+          
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 

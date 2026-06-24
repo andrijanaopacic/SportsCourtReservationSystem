@@ -10,9 +10,6 @@ namespace Reservation.API.Validators.Reservation
             RuleFor(x => x.TimeSlotId)
                 .GreaterThan(0).WithMessage("TimeSlotId mora biti veći od 0.");
 
-            RuleFor(x => x.Date)
-                .Must(d => d >= DateOnly.FromDateTime(DateTime.Today))
-                .WithMessage("Datum rezervacije ne može biti u prošlosti.");
         }
     }
 
@@ -31,7 +28,7 @@ namespace Reservation.API.Validators.Reservation
                 .Must(items =>
                 {
                     var duplicates = items
-                        .GroupBy(i => new { i.TimeSlotId, i.Date })
+                        .GroupBy(i => i.TimeSlotId)
                         .Any(g => g.Count() > 1);
                     return !duplicates;
                 })

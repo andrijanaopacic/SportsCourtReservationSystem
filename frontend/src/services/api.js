@@ -48,5 +48,11 @@ export const getReservationById = (id) => api.get(`/reservations/${id}`);
 export const createReservation = (data) => api.post('/reservations', data);
 export const updateReservation = (id, data) => api.put(`/reservations/${id}`, data);
 export const cancelReservation = (id) => api.put(`/reservations/${id}/cancel`);
-export const getCourtReservations = (courtId, params) =>
-    api.get(`/reservations/court/${courtId}`, { params });
+export const getCourtReservations = (courtId, date) =>
+    api.get(`/reservations/court/${courtId}`, {
+        params: { date }
+    });
+//export const getCourtCalendar = (courtId, year, month) =>
+    //api.get(`/reservations/court/${courtId}/calendar`, {
+     //   params: { year, month }
+   // });

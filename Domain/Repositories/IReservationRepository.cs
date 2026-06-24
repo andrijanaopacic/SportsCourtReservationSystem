@@ -10,6 +10,5 @@ namespace Reservation.Domain.Repositories
         IEnumerable<ReservationEntity> GetByUser(string userId);
         IEnumerable<ReservationEntity> GetByStatus(ReservationStatus status);
         ReservationEntity? GetByIdWithItems(int id);
-
     }
 }

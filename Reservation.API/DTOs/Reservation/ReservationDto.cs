@@ -6,6 +6,7 @@
         public string Status { get; set; } = string.Empty;
         public decimal TotalPrice { get; set; }
         public string ApplicationUserId { get; set; } = string.Empty;
+        public DateOnly Date {  get; set; }
         public List<ReservationItemDto> Items { get; set; } = new();
     }
 }

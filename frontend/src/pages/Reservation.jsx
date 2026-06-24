@@ -205,7 +205,8 @@ function ReservationsList() {
       const res = await getReservationById(id);
       setSelectedReservation(res.data);
       setEditStatus(res.data.status);
-      setEditItems(res.data.items.map(i => ({ timeSlotId: i.timeSlotId, date: i.date })));
+      // Čuvamo ceo objekat kako ne bismo izgubili courtName, startTime i endTime u Edit modu
+      setEditItems(res.data.items.map(i => ({ ...i })));
     } catch {
       setModalMessage('Failed to load reservation details.');
     } finally {
@@ -216,9 +217,11 @@ function ReservationsList() {
   const handleUpdate = async () => {
     setSaving(true);
     try {
+      // Šaljemo samo ono što bek očekuje za update, ali čuvamo strukturu
+      const payloadItems = editItems.map(i => ({ timeSlotId: i.timeSlotId, date: i.date }));
       const res = await updateReservation(selectedReservation.reservationId, {
         status: editStatus,
-        items: editItems,
+        items: payloadItems,
       });
       setSelectedReservation(res.data);
       setEditing(false);
@@ -347,16 +350,25 @@ function ReservationsList() {
                     </div>
 
                     <div style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bronze)', marginBottom: '10px' }}>Items</div>
-                    <table style={{ marginBottom: '20px' }}>
+                    <table style={{ marginBottom: '20px', width: '100%' }}>
                       <thead>
-                        <tr><th>#</th><th>Date</th><th>Time Slot</th><th>Price</th></tr>
+                        <tr>
+                          <th>#</th>
+                          <th>Court</th>
+                          <th>Date</th>
+                          <th>Time Slot</th>
+                          <th>Price</th>
+                        </tr>
                       </thead>
                       <tbody>
                         {selectedReservation.items.map(i => (
                           <tr key={i.rowNumber}>
                             <td>{i.rowNumber}</td>
+                            <td style={{ fontWeight: 500 }}>{i.courtName || 'N/A'}</td>
                             <td>{i.date}</td>
-                            <td>Slot #{i.timeSlotId}</td>
+                            <td>
+                              {i.startTime && i.endTime ? `${fmt(i.startTime)} – ${fmt(i.endTime)}` : `Slot #${i.timeSlotId}`}
+                            </td>
                             <td>{i.price} RSD</td>
                           </tr>
                         ))}
@@ -367,7 +379,7 @@ function ReservationsList() {
                       <div className="actions">
                         <button className="btn" onClick={() => {
                           setEditStatus(selectedReservation.status);
-                          setEditItems(selectedReservation.items.map(i => ({ timeSlotId: i.timeSlotId, date: i.date })));
+                          setEditItems(selectedReservation.items.map(i => ({ ...i })));
                           setEditing(true);
                           setShowWizard(false);
                         }}>Edit</button>
@@ -388,15 +400,29 @@ function ReservationsList() {
                     <div style={{ fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bronze)', marginBottom: '10px' }}>Items</div>
 
                     {editItems.length > 0 && (
-                      <table style={{ marginBottom: '12px' }}>
+                      <table style={{ marginBottom: '12px', width: '100%' }}>
                         <thead>
-                          <tr><th>Date</th><th>Slot ID</th><th></th></tr>
+                          <tr>
+                            <th>Court / Slot</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th></th>
+                          </tr>
                         </thead>
                         <tbody>
                           {editItems.map((item, idx) => (
                             <tr key={idx}>
+                              <td>
+                                {item.courtName ? (
+                                  <span style={{ fontWeight: 500 }}>{item.courtName}</span>
+                                ) : (
+                                  <span style={{ fontStyle: 'italic', color: 'var(--bronze)' }}>New Slot #{item.timeSlotId}</span>
+                                )}
+                              </td>
                               <td>{item.date}</td>
-                              <td>#{item.timeSlotId}</td>
+                              <td>
+                                {item.startTime && item.endTime ? `${fmt(item.startTime)} – ${fmt(item.endTime)}` : '—'}
+                              </td>
                               <td>
                                 <button className="btn-danger" onClick={() => removeItem(idx)} style={{ padding: '4px 8px' }}>✕</button>
                               </td>

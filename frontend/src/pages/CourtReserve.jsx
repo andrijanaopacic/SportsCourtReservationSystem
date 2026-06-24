@@ -134,12 +134,7 @@ function CourtsReserve() {
                     </>
                   )}
 
-                  <Link
-                    to={`/courts/${court.courtId}/calendar`}
-                    className="btn-ghost"
-                  >
-                    Calendar
-                  </Link>
+                 
 <Link to={`/courts/${court.courtId}/reserve`}>
   <button className="btn-primary">Reserve</button>
 </Link>

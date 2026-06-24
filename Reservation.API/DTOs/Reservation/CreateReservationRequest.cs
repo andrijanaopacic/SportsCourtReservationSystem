@@ -3,11 +3,13 @@
     public class CreateReservationItemRequest
     {
         public int TimeSlotId { get; set; }
-        public DateOnly Date { get; set; }
+        
+        
     }
 
     public class CreateReservationRequest
     {
+        public DateOnly Date { get; set; }
         public List<CreateReservationItemRequest> Items { get; set; } = new();
     }
 }

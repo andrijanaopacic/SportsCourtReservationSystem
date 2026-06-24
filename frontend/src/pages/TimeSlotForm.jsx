@@ -68,15 +68,17 @@ function TimeSlotForm() {
     date: '',
     startTime: '08:00',
     endTime: '10:00',
-    price: '',
+    price: '', // Ovde se automatski čuva cena izabranog terena
     isAvailable: true,
   });
   const [error, setError] = useState('');
 
+  // Učitavanje svih terena na početku
   useEffect(() => {
     getCourts({}).then(res => setCourts(res.data)).catch(() => { });
   }, []);
 
+  // Učitavanje podataka o slotu ukoliko je u pitanju izmena (Edit)
   useEffect(() => {
     if (isEdit) {
       getTimeSlotById(id).then(res => {
@@ -85,7 +87,7 @@ function TimeSlotForm() {
           date: res.data.date,
           startTime: res.data.startTime.slice(0, 5),
           endTime: res.data.endTime.slice(0, 5),
-          price: String(res.data.price),
+          price: String(res.data.price), // Povlačenje postojeće cene sa bekenda
           isAvailable: res.data.isAvailable,
         });
       }).catch(() => setError('Failed to load time slot.'));
@@ -159,7 +161,17 @@ function TimeSlotForm() {
           <select
             className="form-select"
             value={form.courtId}
-            onChange={e => setForm({ ...form, courtId: e.target.value })}
+            onChange={e => {
+              const selectedId = e.target.value;
+              const courtObj = courts.find(c => String(c.courtId) === selectedId);
+              
+              setForm({ 
+                ...form, 
+                courtId: selectedId,
+                // Automatski povlači pricePerHour sa bekenda i mapira ga u form.price
+                price: courtObj ? String(courtObj.pricePerHour || '') : ''
+              });
+            }}
           >
             <option value="">Select a court...</option>
             {courts.map(c => (
@@ -183,20 +195,6 @@ function TimeSlotForm() {
         {/* Start and end time pickers */}
         <TimePicker label="Start Time" value={form.startTime} onChange={v => setForm({ ...form, startTime: v })} />
         <TimePicker label="End Time" value={form.endTime} onChange={v => setForm({ ...form, endTime: v })} />
-
-        {/* Price per hour input */}
-        <div className="form-group">
-          <label className="form-label">Price per hour (RSD)</label>
-          <input
-            className="form-input"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="e.g. 1500"
-            value={form.price}
-            onChange={e => setForm({ ...form, price: e.target.value })}
-          />
-        </div>
 
         {/* Availability toggle */}
         <div className="form-group">
@@ -253,7 +251,8 @@ function TimeSlotForm() {
                 </>
               )}
             </div>
-            {/* Price breakdown */}
+            
+            {/* Price breakdown — sada radi automatski na osnovu izabranog terena */}
             {form.price && duration && (
               <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '16px', color: 'var(--sage)' }}>

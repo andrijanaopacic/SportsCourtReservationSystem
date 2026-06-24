@@ -12,7 +12,7 @@ namespace Infrastructure
     {
         public ReservationContext() { }
         public ReservationContext(DbContextOptions<ReservationContext> options) : base(options) { }
-
+        
         public DbSet<Sport> Sports { get; set; }
         public DbSet<Court> Courts { get; set; }
         public DbSet<TimeSlot> TimeSlots { get; set; }
@@ -28,7 +28,7 @@ namespace Infrastructure
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
+            /*
             modelBuilder.Entity<Sport>(entity =>
             {
                 entity.HasKey(s => s.SportId);
@@ -70,7 +70,7 @@ namespace Infrastructure
 
             modelBuilder.Entity<TimeSlot>()        
                 .Property(t => t.TotalPrice)
-                .HasPrecision(18, 2);
+                .HasPrecision(18, 2);*/
 
             modelBuilder.Entity<ReservationEntity>(entity =>
             {
@@ -84,15 +84,19 @@ namespace Infrastructure
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+
             modelBuilder.Entity<ReservationItem>(entity =>
             {
                 entity.HasKey(i => new { i.ReservationId, i.RowNumber });
-
+                entity.Property(i => i.Price)
+                    .HasPrecision(18, 2);
                 entity.HasOne(i => i.TimeSlot)
                       .WithMany()
                       .HasForeignKey(i => i.TimeSlotId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+
+
         }
     }
 }

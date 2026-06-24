@@ -156,9 +156,9 @@ namespace Reservation.API.Controllers
                 StartTime = request.StartTime,
                 EndTime = request.EndTime,
                 Duration = request.EndTime - request.StartTime,
-                Price = request.Price,
-                TotalPrice = ComputeTotalPrice(request.Price, request.StartTime, request.EndTime),
-                IsAvailable = request.IsAvailable,
+                Price = court.PricePerHour,
+                TotalPrice = ComputeTotalPrice(court.PricePerHour, request.StartTime, request.EndTime),
+                IsAvailable = true,
                 CourtId = request.CourtId
             };
 
@@ -203,8 +203,8 @@ namespace Reservation.API.Controllers
             slot.StartTime = request.StartTime;
             slot.EndTime = request.EndTime;
             slot.Duration = request.EndTime - request.StartTime;
-            slot.Price = request.Price;
-            slot.TotalPrice = ComputeTotalPrice(request.Price, request.StartTime, request.EndTime);
+            slot.Price = court.PricePerHour;
+            slot.TotalPrice = ComputeTotalPrice(court.PricePerHour, request.StartTime, request.EndTime);
             slot.IsAvailable = request.IsAvailable;
             slot.CourtId = request.CourtId;
 
