@@ -76,9 +76,12 @@ namespace Reservation.Tests.SportTests
             var result = await _controller.GetById(1);
 
             var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Same(sport, ok.Value);
+            var dto = Assert.IsType<SportDetailsDto>(ok.Value);
+            Assert.Equal(sport.SportId, dto.SportId);
+            Assert.Equal(sport.Name, dto.Name);
+            Assert.Equal(sport.MaxPlayers, dto.MaxPlayers);
+            Assert.Empty(dto.Courts);
         }
-
         [Fact]
         public async Task Create_WhenValidationFails_ReturnsBadRequest()
         {
