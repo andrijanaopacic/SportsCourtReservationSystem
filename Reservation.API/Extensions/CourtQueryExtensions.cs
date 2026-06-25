@@ -13,5 +13,10 @@ namespace Reservation.API.Extensions
             this IEnumerable<Court> courts, bool? isIndoor) =>
             isIndoor == null ? courts :
             courts.Where(c => c.IsIndoor == isIndoor);
+
+        public static IEnumerable<Court> FilterBySport(
+            this IEnumerable<Court> courts, int? sportId) =>
+            sportId == null || sportId == 0 ? courts :
+            courts.Where(c => c.SportId == sportId);
     }
 }

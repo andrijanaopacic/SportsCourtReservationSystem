@@ -24,15 +24,16 @@ public class CourtsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string? name, [FromQuery] bool? isIndoor)
+    public async Task<IActionResult> GetAll([FromQuery] string? name, [FromQuery] bool? isIndoor, [FromQuery] int? sportId)
     {
-        var cacheKey = $"courts_{name}_{isIndoor}";
+        var cacheKey = $"courts_{name}_{isIndoor}_{sportId}";
         var cached = await _cache.GetAsync<List<CourtDto>>(cacheKey);
         if (cached != null) return Ok(cached);
 
         var courts = _uow.Courts.GetAllWithSport()
             .FilterByName(name)
             .FilterByIndoor(isIndoor)
+            .FilterBySport(sportId)
             .Select(c => new CourtDto
             {
                 CourtId = c.CourtId,
@@ -42,12 +43,11 @@ public class CourtsController : ControllerBase
                 PricePerHour = c.PricePerHour,
                 IsIndoor = c.IsIndoor,
                 SportName = c.Sport.Name,
-                SportId = c.SportId 
+                SportId = c.SportId
             })
             .ToList();
 
         await _cache.SetAsync(cacheKey, courts);
-
         return Ok(courts);
     }
 

@@ -1,23 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getCourts, deleteCourt } from '../services/api';
+import { getCourts, deleteCourt, getSports } from '../services/api';
 import Modal from '../components/Modal';
+import React from 'react';
 
 function CourtsList() {
   const [courts, setCourts] = useState([]);
   const [name, setName] = useState('');
   const [isIndoor, setIsIndoor] = useState('');
+  const [sportId, setSportId] = useState('');
+  const [sports, setSports] = useState([]);
   const [error, setError] = useState('');
   const [modalMessage, setModalMessage] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
-  useEffect(() => { fetchCourts(); }, []);
+  useEffect(() => {
+    fetchCourts();
+    getSports({}).then(res => setSports(res.data));
+  }, []);
 
   const fetchCourts = async () => {
     try {
       const params = {};
       if (name) params.name = name;
       if (isIndoor !== '') params.isIndoor = isIndoor;
+      if (sportId) params.sportId = sportId;
       const res = await getCourts(params);
       setCourts(res.data);
     } catch {
@@ -28,6 +35,7 @@ function CourtsList() {
   const handleShowAll = async () => {
     setName('');
     setIsIndoor('');
+    setSportId('');
     try {
       const res = await getCourts({});
       setCourts(res.data);
@@ -86,6 +94,21 @@ function CourtsList() {
             <option value="false">Outdoor</option>
           </select>
         </div>
+        <div className="form-group">
+          <label className="form-label">Sport</label>
+          <select
+            className="form-select"
+            value={sportId}
+            onChange={e => setSportId(e.target.value)}
+            style={{ width: '160px' }}
+          >
+            <option value="">All sports</option>
+            {sports.map(s => (
+              <option key={s.sportId} value={s.sportId}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+
         <button className="btn-ghost" onClick={fetchCourts}>Search</button>
         <button className="btn-ghost" onClick={handleShowAll}>Show All</button>
       </div>
@@ -105,8 +128,8 @@ function CourtsList() {
         </thead>
         <tbody>
           {courts.map(court => (
-            <>
-              <tr key={court.courtId}>
+            <React.Fragment key={court.courtId}>
+              <tr>
                 <td className="td-name">{court.name}</td>
                 <td>{court.sportName}</td>
                 <td>{court.location}</td>
@@ -143,7 +166,7 @@ function CourtsList() {
                 </td>
               </tr>
               {expandedDescriptions[court.courtId] && court.description && (
-                <tr key={`desc-${court.courtId}`}>
+                <tr>
                   <td colSpan="6" style={{
                     padding: '0 0 16px 0',
                     fontSize: '13px',
@@ -156,7 +179,7 @@ function CourtsList() {
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
