@@ -16,7 +16,6 @@ namespace Reservation.API.Validators.Court
                 .MaximumLength(200).WithMessage("Location must not exceed 200 characters.");
 
             RuleFor(x => x.PricePerHour)
-                .NotEmpty().WithMessage("Price is required.")
                 .GreaterThan(0).WithMessage("Price per hour must be greater than 0.");
 
             RuleFor(x => x.SportId)

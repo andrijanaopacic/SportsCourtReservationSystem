@@ -163,9 +163,9 @@ namespace Reservation.Tests.CourtTests
 
         private List<Court> SampleCourts() => new()
         {
-            new Court { CourtId = 1, Name = "Centralni teren", IsIndoor = true },
-            new Court { CourtId = 2, Name = "Padel Arena", IsIndoor = false },
-            new Court { CourtId = 3, Name = "Teniski centar Novak", IsIndoor = true }
+            new Court { CourtId = 1, Name = "Centralni teren", IsIndoor = true, SportId = 1 },
+            new Court { CourtId = 2, Name = "Padel Arena", IsIndoor = false, SportId = 1 },
+            new Court { CourtId = 3, Name = "Teniski centar Novak", IsIndoor = true, SportId = 2 }
         };
 
         [Fact]
@@ -194,6 +194,20 @@ namespace Reservation.Tests.CourtTests
         {
             var result = SampleCourts().FilterByIndoor(false);
             Assert.Single(result);
+        }
+
+        [Fact]
+        public void FilterBySport_WhenSportIdIsNull_ReturnsAllCourts()
+        {
+            var result = SampleCourts().FilterBySport(null);
+            Assert.Equal(3, result.Count());
+        }
+
+        [Fact]
+        public void FilterBySport_WhenSportIdMatches_ReturnsFilteredCourts()
+        {
+            var result = SampleCourts().FilterBySport(1);
+            Assert.Equal(2, result.Count());
         }
 
     }

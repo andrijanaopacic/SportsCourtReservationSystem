@@ -77,35 +77,7 @@ public class CourtsController : ControllerBase
         return Ok(dto);
     }
 
-    [HttpGet("by-sport/{sportId}")]
-    public async Task<IActionResult> GetBySport(int sportId)
-    {
-        var cacheKey = $"courts_sport_{sportId}";
-
-        var cached = await _cache.GetAsync<List<CourtDto>>(cacheKey);
-        if (cached != null) return Ok(cached);
-
-        var sport = _uow.Sports.GetById(sportId);
-        if (sport == null) return NotFound($"Sport with id {sportId} not found.");
-
-        var courts = _uow.Courts.GetBySport(sportId)
-            .Select(c => new CourtDto
-            {
-                CourtId = c.CourtId,
-                Name = c.Name,
-                Location = c.Location,
-                Description = c.Description,
-                PricePerHour = c.PricePerHour,
-                IsIndoor = c.IsIndoor,
-                SportName = sport.Name,
-                SportId = c.SportId
-            })
-            .ToList();
-
-        await _cache.SetAsync(cacheKey, courts);
-
-        return Ok(courts);
-    }
+    
 
     [HttpPost]
     [Authorize(Roles = "Admin")]

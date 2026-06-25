@@ -26,7 +26,6 @@ export const getCourtById = (id) => api.get(`/courts/${id}`);
 export const createCourt = (data) => api.post('/courts', data);
 export const updateCourt = (id, data) => api.put(`/courts/${id}`, data);
 export const deleteCourt = (id) => api.delete(`/courts/${id}`);
-export const getCourtsBySport = (sportId) => api.get(`/courts/by-sport/${sportId}`);
 
 // TimeSlots — date param je opcionalan; ako se prosledi, bek filtrira isAvailable po datumu
 export const getTimeSlots = (params) => api.get('/timeslots', { params });

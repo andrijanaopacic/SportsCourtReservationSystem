@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 import Navbar from './components/Navbar';
@@ -24,6 +24,15 @@ import ConfirmReservation from './pages/ConfirmReservation';
 import Reservation from './pages/Reservation';
 import AdminReservations from './pages/AdminReservations';
 
+function HomeRedirect() {
+  const { user, loadingAuth, isAdmin } = useAuth();
+  if (loadingAuth) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return isAdmin()
+    ? <Navigate to="/sports" replace />
+    : <Navigate to="/reservations/create" replace />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -32,7 +41,7 @@ function App() {
 
         <Routes>
           {/* PUBLIC */}
-          
+          <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
@@ -54,7 +63,7 @@ function App() {
           <Route path="/admin/reservations" element={
             <ProtectedRoute role="admin"><AdminReservations /></ProtectedRoute>
           } />
-          <Route path="/" element={
+          <Route path="/sports" element={
             <ProtectedRoute role="admin"><SportsList /></ProtectedRoute>
           } />
           <Route path="/sports/new" element={

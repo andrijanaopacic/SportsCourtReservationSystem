@@ -8,7 +8,6 @@ namespace Reservation.Domain.Repositories
     public interface ICourtRepository : IRepository<Court>
     {
         Court? GetByIdWithSport(int id);
-        IEnumerable<Court> GetBySport(int sportId);
         IEnumerable<Court> GetAllWithSport();
     }
 }

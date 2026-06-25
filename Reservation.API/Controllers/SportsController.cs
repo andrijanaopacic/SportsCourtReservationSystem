@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Reservation.API.DTOs.Court;
 using Reservation.API.DTOs.Sport;
 using Reservation.API.Services;
 using Reservation.Domain.Models;
@@ -43,15 +44,33 @@ namespace Reservation.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var cacheKey = $"sport_{id}";
-            var cached = await _cache.GetAsync<Sport>(cacheKey);
-            if(cached != null ) return Ok(cached);
+            var cached = await _cache.GetAsync<SportDetailsDto>(cacheKey);
+            if (cached != null) return Ok(cached);
 
             var sport = _uow.Sports.GetByIdWithCourts(id);
             if (sport == null) return NotFound($"Sport with id {id} not found.");
 
-            await _cache.SetAsync(cacheKey, sport);
+            var dto = new SportDetailsDto
+            {
+                SportId = sport.SportId,
+                Name = sport.Name,
+                MaxPlayers = sport.MaxPlayers,
+                Courts = sport.Courts.Select(c => new CourtDto
+                {
+                    CourtId = c.CourtId,
+                    Name = c.Name,
+                    Location = c.Location,
+                    Description = c.Description,
+                    PricePerHour = c.PricePerHour,
+                    IsIndoor = c.IsIndoor,
+                    SportId = c.SportId,
+                    SportName = sport.Name
+                }).ToList()
+            };
 
-            return Ok(sport);
+            await _cache.SetAsync(cacheKey, dto);
+
+            return Ok(dto);
         }
 
         [HttpPost]

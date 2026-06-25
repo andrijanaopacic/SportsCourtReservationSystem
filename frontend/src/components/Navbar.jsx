@@ -15,7 +15,7 @@ function Navbar() {
   };
 
   const adminLinks = [
-    { path: '/', label: 'Sports' },
+    { path: '/sports', label: 'Sports' },
     { path: '/courts', label: 'Courts' },
     { path: '/timeslots', label: 'Time Slots' },
     { path: '/admin/reservations', label: 'Reservations' },

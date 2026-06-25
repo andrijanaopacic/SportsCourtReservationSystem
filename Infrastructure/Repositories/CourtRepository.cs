@@ -16,11 +16,6 @@ namespace Reservation.Infrastructure.Repositories
             DbSet.Include(c => c.Sport)
                  .FirstOrDefault(c => c.CourtId == id);
 
-        public IEnumerable<Court> GetBySport(int sportId) =>
-            DbSet.Include(c => c.Sport)
-                 .Where(c => c.SportId == sportId)
-                 .ToList();
-
         public IEnumerable<Court> GetAllWithSport() =>
             DbSet.Include(c => c.Sport).ToList();
     }
