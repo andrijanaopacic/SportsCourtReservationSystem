@@ -1,10 +1,8 @@
-﻿using FluentValidation;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Reservation.API.DTOs.Auth;
-using Reservation.API.Services;
-using Reservation.Infrastructure.Identity;
+using Reservation.Application.Features.Auth.Commands;
+using Reservation.Application.Features.Auth.Queries;
 using System.Security.Claims;
 
 namespace Reservation.API.Controllers
@@ -13,97 +11,31 @@ namespace Reservation.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly JwtTokenService _tokenService;
-        private readonly IValidator<RegisterRequest> _registerValidator;
-        private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IMediator mediator;
 
-        public AuthController(
-            UserManager<ApplicationUser> userManager,
-            JwtTokenService tokenService,
-            IValidator<RegisterRequest> registerValidator,
-            IValidator<LoginRequest> loginValidator)
+        public AuthController(IMediator mediator)
         {
-            _userManager = userManager;
-            _tokenService = tokenService;
-            _registerValidator = registerValidator;
-            _loginValidator = loginValidator;
+            this.mediator = mediator;
         }
 
         [HttpPost("register")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterCommand request)
         {
-            var validationResult = _registerValidator.Validate(request);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(validationResult.Errors
-                    .Select(e => new { e.PropertyName, e.ErrorMessage }));
-            }
+            var result = await mediator.Send(request);
+            if (!result.IsSuccess) return BadRequest(result.Error);
 
-            var existing = await _userManager.FindByEmailAsync(request.Email);
-            if (existing != null)
-            {
-                return BadRequest("Korisnik sa ovom email adresom već postoji.");
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = request.Email,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                PhoneNumber = request.PhoneNumber
-            };
-
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors.Select(e => e.Description));
-            }
-
-            await _userManager.AddToRoleAsync(user, "Korisnik");
-
-            var token = await _tokenService.CreateTokenAsync(user);
-
-            return Ok(new AuthResponseDto
-            {
-                Token = token,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Roles = new List<string> { "Korisnik" }
-            });
+            return Ok(result.Value);
         }
 
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginCommand request)
         {
-            var validationResult = _loginValidator.Validate(request);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(validationResult.Errors
-                    .Select(e => new { e.PropertyName, e.ErrorMessage }));
-            }
+            var result = await mediator.Send(request);
+            if (!result.IsSuccess) return Unauthorized(result.Error);
 
-            var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
-            {
-                return Unauthorized("Pogrešan email ili lozinka.");
-            }
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var token = await _tokenService.CreateTokenAsync(user);
-
-            return Ok(new AuthResponseDto
-            {
-                Token = token,
-                Email = user.Email ?? string.Empty,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Roles = roles.ToList()
-            });
+            return Ok(result.Value);
         }
 
         [HttpGet("me")]
@@ -111,28 +43,12 @@ namespace Reservation.API.Controllers
         public async Task<IActionResult> Me()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
+            if (userId == null) return Unauthorized();
 
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var result = await mediator.Send(new GetMeQuery(userId));
+            if (!result.IsSuccess) return NotFound(result.Error);
 
-            var roles = await _userManager.GetRolesAsync(user);
-
-            return Ok(new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email ?? string.Empty,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                Roles = roles.ToList()
-            });
+            return Ok(result.Value);
         }
     }
 }

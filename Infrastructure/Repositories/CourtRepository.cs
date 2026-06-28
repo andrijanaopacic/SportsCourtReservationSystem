@@ -18,5 +18,6 @@ namespace Reservation.Infrastructure.Repositories
 
         public IEnumerable<Court> GetAllWithSport() =>
             DbSet.Include(c => c.Sport).ToList();
+
     }
 }

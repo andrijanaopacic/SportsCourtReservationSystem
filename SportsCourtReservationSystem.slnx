@@ -2,5 +2,6 @@
   <Project Path="Domain/Reservation.Domain.csproj" />
   <Project Path="Infrastructure/Reservation.Infrastructure.csproj" />
   <Project Path="Reservation.API/Reservation.API.csproj" />
+  <Project Path="Reservation.Application/Reservation.Application.csproj" Id="bc7e4889-746d-4169-aeab-1f464bac5e15" />
   <Project Path="Reservation.Tests/Reservation.Tests.csproj" Id="051729fb-be9e-4f81-80c9-2872e18c5830" />
 </Solution>

@@ -266,6 +266,27 @@ namespace Reservation.Infrastructure.Migrations
                     b.ToTable("Sports");
                 });
 
+            modelBuilder.Entity("Reservation.Domain.Models.Student", b =>
+                {
+                    b.Property<int>("StudentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StudentId"));
+
+                    b.Property<string>("Ime")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Prezime")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("StudentId");
+
+                    b.ToTable("Students");
+                });
+
             modelBuilder.Entity("Reservation.Domain.Models.TimeSlot", b =>
                 {
                     b.Property<int>("TimeSlotId")
